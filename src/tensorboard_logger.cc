@@ -17,7 +17,7 @@ using tensorflow::Summary;
 
 // https://github.com/dmlc/tensorboard/blob/master/python/tensorboard/summary.py#L115
 int TensorBoardLogger::generate_default_buckets() {
-    if (bucket_limits_ == NULL) {
+    if (bucket_limits_ == nullptr) {
         bucket_limits_ = new vector<double>;
         vector<double> pos_buckets, neg_buckets;
         double v = 1e-12;
@@ -41,7 +41,7 @@ int TensorBoardLogger::generate_default_buckets() {
 // https://github.com/dmlc/tensorboard/blob/master/python/tensorboard/summary.py#L127
 int TensorBoardLogger::add_histogram(const std::string &tag, int step,
                                      const float *value, size_t num) {
-    if (bucket_limits_ == NULL) {
+    if (bucket_limits_ == nullptr) {
         generate_default_buckets();
     }
 
@@ -100,7 +100,7 @@ int TensorBoardLogger::add_scalar(const string &tag, int step, float value) {
 
 int TensorBoardLogger::add_event(int64_t step, Summary *summary) {
     Event event;
-    double wall_time = time(NULL);
+    double wall_time = time(nullptr);
     event.set_wall_time(wall_time);
     event.set_step(step);
     event.set_allocated_summary(summary);

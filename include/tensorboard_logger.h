@@ -15,7 +15,7 @@ using tensorflow::Summary;
 class TensorBoardLogger {
    public:
     explicit TensorBoardLogger(const char *log_file) {
-        bucket_limits_ = NULL;
+        bucket_limits_ = nullptr;
         ofs_ = new std::ofstream(
             log_file, std::ios::out | std::ios::trunc | std::ios::binary);
         if (!ofs_->is_open())
@@ -24,9 +24,9 @@ class TensorBoardLogger {
     }
     ~TensorBoardLogger() {
         ofs_->close();
-        if (bucket_limits_ != NULL) {
+        if (bucket_limits_ != nullptr) {
             delete bucket_limits_;
-            bucket_limits_ = NULL;
+            bucket_limits_ = nullptr;
         }
     }
     int add_scalar(const std::string &tag, int step, float value);
