@@ -9,8 +9,8 @@
 #include "crc.h"
 #include "event.pb.h"
 
-using tensorboard::Event;
-using tensorboard::Summary;
+using tensorflow::Event;
+using tensorflow::Summary;
 
 class TensorBoardLogger {
    public:

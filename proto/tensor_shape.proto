@@ -5,8 +5,9 @@ option cc_enable_arenas = true;
 option java_outer_classname = "TensorShapeProtos";
 option java_multiple_files = true;
 option java_package = "org.tensorflow.framework";
+option go_package = "github.com/tensorflow/tensorflow/tensorflow/go/core/framework/tensor_shape_go_proto";
 
-package tensorboard;
+package tensorflow;
 
 // Dimensions of a tensor.
 message TensorShapeProto {
@@ -43,3 +44,4 @@ message TensorShapeProto {
   // If true, "dim.size()" must be 0.
   bool unknown_rank = 3;
 };
+

@@ -11,9 +11,9 @@
 #include <vector>
 
 using namespace std;
-using tensorboard::Event;
-using tensorboard::HistogramProto;
-using tensorboard::Summary;
+using tensorflow::Event;
+using tensorflow::HistogramProto;
+using tensorflow::Summary;
 
 // https://github.com/dmlc/tensorboard/blob/master/python/tensorboard/summary.py#L115
 int TensorBoardLogger::generate_default_buckets() {
