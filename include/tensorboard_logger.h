@@ -30,6 +30,8 @@ class TensorBoardLogger {
         }
     }
     int add_scalar(const std::string &tag, int step, float value);
+    int add_histogram(const std::string &tag, int step, const float *value,
+                      size_t num);
     int add_histogram(const std::string &tag, int step,
                       std::vector<float> &value);
 

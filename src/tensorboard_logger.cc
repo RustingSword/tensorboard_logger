@@ -39,8 +39,8 @@ int TensorBoardLogger::generate_default_buckets() {
 }
 
 // https://github.com/dmlc/tensorboard/blob/master/python/tensorboard/summary.py#L127
-int TensorBoardLogger::add_histogram(const string &tag, int step,
-                                     vector<float> &values) {
+int TensorBoardLogger::add_histogram(const std::string &tag, int step,
+                                     const float *value, size_t num) {
     if (bucket_limits_ == NULL) {
         generate_default_buckets();
     }
@@ -50,7 +50,8 @@ int TensorBoardLogger::add_histogram(const string &tag, int step,
     double max = numeric_limits<double>::lowest();
     double sum = 0.0;
     double sum_squares = 0.0;
-    for (auto v : values) {
+    for (size_t i = 0; i < num; ++i) {
+        float v = value[i];
         auto lb =
             lower_bound(bucket_limits_->begin(), bucket_limits_->end(), v);
         counts[lb - bucket_limits_->begin()]++;
@@ -63,10 +64,10 @@ int TensorBoardLogger::add_histogram(const string &tag, int step,
         }
     }
 
-    auto histo = new HistogramProto();
+    auto *histo = new HistogramProto();
     histo->set_min(min);
     histo->set_max(max);
-    histo->set_num(values.size());
+    histo->set_num(num);
     histo->set_sum(sum);
     histo->set_sum_squares(sum_squares);
     for (size_t i = 0; i < counts.size(); ++i) {
@@ -76,19 +77,22 @@ int TensorBoardLogger::add_histogram(const string &tag, int step,
         }
     }
 
-    auto summary = new Summary();
-    auto v = summary->add_value();
-    v->set_node_name(tag);
+    auto *summary = new Summary();
+    auto *v = summary->add_value();
     v->set_tag(tag);
     v->set_allocated_histo(histo);
 
     return add_event(step, summary);
 }
 
+int TensorBoardLogger::add_histogram(const string &tag, int step,
+                                     vector<float> &values) {
+    return add_histogram(tag, step, values.data(), values.size());
+}
+
 int TensorBoardLogger::add_scalar(const string &tag, int step, float value) {
-    auto summary = new Summary();
-    auto v = summary->add_value();
-    v->set_node_name(tag);
+    auto *summary = new Summary();
+    auto *v = summary->add_value();
     v->set_tag(tag);
     v->set_simple_value(value);
     return add_event(step, summary);
@@ -106,7 +110,7 @@ int TensorBoardLogger::add_event(int64_t step, Summary *summary) {
 int TensorBoardLogger::write(Event &event) {
     string buf;
     event.SerializeToString(&buf);
-    uint64_t buf_len = static_cast<uint64_t>(buf.size());
+    auto buf_len = static_cast<uint64_t>(buf.size());
     uint32_t len_crc =
         masked_crc32c((char *)&buf_len, sizeof(uint64_t));  // NOLINT
     uint32_t data_crc = masked_crc32c(buf.c_str(), buf.size());
