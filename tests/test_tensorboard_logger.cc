@@ -23,7 +23,7 @@ int test_log(const char* log_file) {
     }
 
     // test add image
-    ifstream fin("./Lenna_(test_image).png", ios::binary);
+    ifstream fin("./assets/Lenna_(test_image).png", ios::binary);
     ostringstream ss;
 
     ss << fin.rdbuf();
@@ -36,7 +36,7 @@ int test_log(const char* log_file) {
         "in the field of image processing since 1973.");
 
     // test add audio
-    fin.open("./file_example_WAV_1MG.wav", ios::binary);
+    fin.open("./assets/file_example_WAV_1MG.wav", ios::binary);
     ss << fin.rdbuf();
     string audio(ss.str());
     fin.close();

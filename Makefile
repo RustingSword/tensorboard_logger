@@ -31,7 +31,7 @@ test: tests/test_tensorboard_logger.cc lib
 	$(CC) $(INCLUDES) $< $(LIB) -o $@ $(LDFLAGS)
 
 clean:
-	rm -f src/*.o $(LIB) test
+	rm -f src/*.o $(LIB) test tfevents.pb
 
 distclean: clean
 	rm -f include/*.pb.h src/*.pb.cc

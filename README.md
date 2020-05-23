@@ -2,11 +2,11 @@
 
 C++ API to log data in tensorboard format. Only support `scalar`, `histogram`, `image`, `audio` and `text` at the moment.
 
-![scalar](scalar.jpg)
-![histogram](histogram.jpg)
-![image](image.jpg)
-![audio](audio.jpg)
-![text](text.jpg)
+![scalar](./assets/scalar.jpg)
+![histogram](./assets/histogram.jpg)
+![image](./assets/image.jpg)
+![audio](./assets/audio.jpg)
+![text](./assets/text.jpg)
 
 # Acknowledgement
 
