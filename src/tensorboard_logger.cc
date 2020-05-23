@@ -1,3 +1,5 @@
+#include "tensorboard_logger.h"
+
 #include <algorithm>  // std::lower_bound
 #include <cstdint>    // uint32_t, uint64_t
 #include <ctime>      // std::time
@@ -7,12 +9,11 @@
 #include <random>
 #include <string>
 #include <vector>
-#include "tensorboard_logger.h"
 
 using namespace std;
-using tensorboard::Summary;
 using tensorboard::Event;
 using tensorboard::HistogramProto;
+using tensorboard::Summary;
 
 // https://github.com/dmlc/tensorboard/blob/master/python/tensorboard/summary.py#L115
 int TensorBoardLogger::generate_default_buckets() {
@@ -28,11 +29,9 @@ int TensorBoardLogger::generate_default_buckets() {
         pos_buckets.push_back(numeric_limits<double>::max());
         neg_buckets.push_back(numeric_limits<double>::lowest());
 
-        bucket_limits_->insert(bucket_limits_->end(),
-                               neg_buckets.rbegin(),
+        bucket_limits_->insert(bucket_limits_->end(), neg_buckets.rbegin(),
                                neg_buckets.rend());
-        bucket_limits_->insert(bucket_limits_->end(),
-                               pos_buckets.begin(),
+        bucket_limits_->insert(bucket_limits_->end(), pos_buckets.begin(),
                                pos_buckets.end());
     }
 
@@ -40,7 +39,8 @@ int TensorBoardLogger::generate_default_buckets() {
 }
 
 // https://github.com/dmlc/tensorboard/blob/master/python/tensorboard/summary.py#L127
-int TensorBoardLogger::add_histogram(const string &tag, int step, vector<float> &values) {
+int TensorBoardLogger::add_histogram(const string &tag, int step,
+                                     vector<float> &values) {
     if (bucket_limits_ == NULL) {
         generate_default_buckets();
     }
@@ -50,8 +50,9 @@ int TensorBoardLogger::add_histogram(const string &tag, int step, vector<float> 
     double max = numeric_limits<double>::lowest();
     double sum = 0.0;
     double sum_squares = 0.0;
-    for (auto v: values) {
-        auto lb = lower_bound(bucket_limits_->begin(), bucket_limits_->end(), v);
+    for (auto v : values) {
+        auto lb =
+            lower_bound(bucket_limits_->begin(), bucket_limits_->end(), v);
         counts[lb - bucket_limits_->begin()]++;
         sum += v;
         sum_squares += v * v;
@@ -106,13 +107,14 @@ int TensorBoardLogger::write(Event &event) {
     string buf;
     event.SerializeToString(&buf);
     uint64_t buf_len = static_cast<uint64_t>(buf.size());
-    uint32_t len_crc = masked_crc32c((char*)&buf_len, sizeof(uint64_t));  // NOLINT
+    uint32_t len_crc =
+        masked_crc32c((char *)&buf_len, sizeof(uint64_t));  // NOLINT
     uint32_t data_crc = masked_crc32c(buf.c_str(), buf.size());
 
-    ofs_->write((char*)&buf_len, sizeof(uint64_t));  // NOLINT
-    ofs_->write((char*)&len_crc, sizeof(uint32_t));  // NOLINT
+    ofs_->write((char *)&buf_len, sizeof(uint64_t));  // NOLINT
+    ofs_->write((char *)&len_crc, sizeof(uint32_t));  // NOLINT
     ofs_->write(buf.c_str(), buf.size());
-    ofs_->write((char*)&data_crc, sizeof(uint32_t));  // NOLINT
+    ofs_->write((char *)&data_crc, sizeof(uint32_t));  // NOLINT
     ofs_->flush();
     return 0;
 }
