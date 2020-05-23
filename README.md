@@ -1,7 +1,6 @@
 # TensorBoard Logger
 
-C++ API to log data in tensorboard format. Only support `scalar` and `histogram`
-at the moment.
+C++ API to log data in tensorboard format. Only support `scalar`, `histogram`, `image`, `audio` and `text` at the moment.
 
 ![scalar](scalar.jpg)
 ![histogram](histogram.jpg)
