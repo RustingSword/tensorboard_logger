@@ -14,6 +14,8 @@ using namespace std;
 using tensorflow::Event;
 using tensorflow::HistogramProto;
 using tensorflow::Summary;
+using tensorflow::SummaryMetadata;
+using tensorflow::TensorProto;
 
 // https://github.com/dmlc/tensorboard/blob/master/python/tensorboard/summary.py#L115
 int TensorBoardLogger::generate_default_buckets() {
@@ -95,6 +97,76 @@ int TensorBoardLogger::add_scalar(const string &tag, int step, float value) {
     auto *v = summary->add_value();
     v->set_tag(tag);
     v->set_simple_value(value);
+    return add_event(step, summary);
+}
+
+int TensorBoardLogger::add_image(const string &tag, int step,
+                                 const string &encoded_image, int height,
+                                 int width, int channel,
+                                 const string &display_name,
+                                 const string &description) {
+    auto *meta = new SummaryMetadata();
+    meta->set_display_name(display_name == "" ? tag : display_name);
+    meta->set_summary_description(description);
+
+    auto *image = new Summary::Image();
+    image->set_height(height);
+    image->set_width(width);
+    image->set_colorspace(channel);
+    image->set_encoded_image_string(encoded_image);
+
+    auto *summary = new Summary();
+    auto *v = summary->add_value();
+    v->set_tag(tag);
+    v->set_allocated_image(image);
+    v->set_allocated_metadata(meta);
+    return add_event(step, summary);
+}
+
+int TensorBoardLogger::add_audio(const string &tag, int step,
+                                 const string &encoded_audio, float sample_rate,
+                                 int num_channels, int length_frame,
+                                 const string &content_type,
+                                 const string &display_name,
+                                 const string &description) {
+    auto *meta = new SummaryMetadata();
+    meta->set_display_name(display_name == "" ? tag : display_name);
+    meta->set_summary_description(description);
+
+    auto *audio = new Summary::Audio();
+    audio->set_sample_rate(sample_rate);
+    audio->set_num_channels(num_channels);
+    audio->set_length_frames(length_frame);
+    audio->set_encoded_audio_string(encoded_audio);
+    audio->set_content_type(content_type);
+
+    auto *summary = new Summary();
+    auto *v = summary->add_value();
+    v->set_tag(tag);
+    v->set_allocated_audio(audio);
+    v->set_allocated_metadata(meta);
+    return add_event(step, summary);
+}
+
+int TensorBoardLogger::add_text(const string &tag, int step, const char *text) {
+    auto *plugin_data = new SummaryMetadata::PluginData();
+    plugin_data->set_plugin_name("text");
+
+    auto *meta = new SummaryMetadata();
+    meta->set_allocated_plugin_data(plugin_data);
+
+    auto *tensor = new TensorProto();
+    tensor->set_dtype(tensorflow::DataType::DT_STRING);
+
+    auto *str_val = tensor->add_string_val();
+    *str_val = text;
+
+    auto *summary = new Summary();
+    auto *v = summary->add_value();
+    v->set_tag(tag);
+    v->set_allocated_tensor(tensor);
+    v->set_allocated_metadata(meta);
+
     return add_event(step, summary);
 }
 

@@ -2,5 +2,7 @@
 *.pb.cc
 *.pb.h
 *.o
+*.a
 test
 demo
+.vscode/

@@ -34,6 +34,17 @@ class TensorBoardLogger {
                       size_t num);
     int add_histogram(const std::string &tag, int step,
                       std::vector<float> &value);
+    int add_image(const std::string &tag, int step,
+                  const std::string &encoded_image, int height, int width,
+                  int channel, const std::string &display_name = "",
+                  const std::string &description = "");
+    int add_audio(const std::string &tag, int step,
+                  const std::string &encoded_audio, float sample_rate,
+                  int num_channels, int length_frame,
+                  const std::string &content_type,
+                  const std::string &display_name = "",
+                  const std::string &description = "");
+    int add_text(const std::string &tag, int step, const char *text);
 
    private:
     int generate_default_buckets();
