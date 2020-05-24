@@ -38,6 +38,10 @@ class TensorBoardLogger {
                   const std::string &encoded_image, int height, int width,
                   int channel, const std::string &display_name = "",
                   const std::string &description = "");
+    int add_images(const std::string &tag, int step, int height, int width,
+                const std::vector<std::string> &encoded_images,
+                const std::string &display_name = "",
+                const std::string &description = "");
     int add_audio(const std::string &tag, int step,
                   const std::string &encoded_audio, float sample_rate,
                   int num_channels, int length_frame,

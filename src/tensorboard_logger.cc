@@ -123,6 +123,32 @@ int TensorBoardLogger::add_image(const string &tag, int step,
     return add_event(step, summary);
 }
 
+int TensorBoardLogger::add_images(const std::string &tag, int step, int height, int width,
+                                  const std::vector<std::string> &encoded_images,
+                                  const std::string &display_name,
+                                  const std::string &description) {
+    auto *plugin_data = new SummaryMetadata::PluginData();
+    plugin_data->set_plugin_name("images");
+    auto *meta = new SummaryMetadata();
+    meta->set_display_name(display_name == "" ? tag : display_name);
+    meta->set_summary_description(description);
+    meta->set_allocated_plugin_data(plugin_data);
+
+    auto *tensor = new TensorProto();
+    tensor->set_dtype(tensorflow::DataType::DT_STRING);
+    tensor->add_string_val(to_string(width));
+    tensor->add_string_val(to_string(height));
+    for (const auto &image: encoded_images)
+        tensor->add_string_val(image);
+
+    auto *summary = new Summary();
+    auto *v = summary->add_value();
+    v->set_tag(tag);
+    v->set_allocated_tensor(tensor);
+    v->set_allocated_metadata(meta);
+
+    return add_event(step, summary);
+}
 int TensorBoardLogger::add_audio(const string &tag, int step,
                                  const string &encoded_audio, float sample_rate,
                                  int num_channels, int length_frame,

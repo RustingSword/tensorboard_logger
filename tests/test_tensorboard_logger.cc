@@ -30,8 +30,14 @@ int test_log(const char* log_file) {
     string image(ss.str());
     ss.str("");
     fin.close();
-    logger.add_image(
-        "Image Sample", 1, image, 512, 512, 3, "Lena Forsén",
+    fin.open("./assets/audio.jpg", ios::binary);
+    ss << fin.rdbuf();
+    string image2(ss.str());
+    ss.str("");
+    fin.close();
+    vector<string>encoded_images = {image, image2};
+    logger.add_images(
+        "Image Sample", 1, 512, 512, encoded_images ,"Lena Forsén",
         "Lenna or Lena is the name given to a standard test image widely used "
         "in the field of image processing since 1973.");
 
