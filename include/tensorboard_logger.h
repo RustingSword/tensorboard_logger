@@ -8,6 +8,7 @@
 
 #include "crc.h"
 #include "event.pb.h"
+#include "projector_config.pb.h"
 
 using tensorflow::Event;
 using tensorflow::Summary;
@@ -45,6 +46,8 @@ class TensorBoardLogger {
                   const std::string &display_name = "",
                   const std::string &description = "");
     int add_text(const std::string &tag, int step, const char *text);
+    int projector(const std::string &metadata_path, const std::string &tensordata_path,
+                    const std::string &tensor_name="");
 
    private:
     int generate_default_buckets();
