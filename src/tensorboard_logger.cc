@@ -9,11 +9,16 @@
 #include <random>
 #include <string>
 #include <vector>
+#include <google/protobuf/text_format.h>
+#include <sstream>
 
 using namespace std;
 using tensorflow::Event;
 using tensorflow::HistogramProto;
 using tensorflow::Summary;
+using tensorflow::SpriteMetadata;
+using tensorflow::ProjectorConfig;
+using tensorflow::EmbeddingInfo;
 using tensorflow::SummaryMetadata;
 using tensorflow::TensorProto;
 
@@ -194,6 +199,38 @@ int TensorBoardLogger::add_text(const string &tag, int step, const char *text) {
     v->set_allocated_metadata(meta);
 
     return add_event(step, summary);
+}
+
+int TensorBoardLogger::projector(const std::string &metadata_path,
+                                 const std::string &tensordata_path,
+                                 const std::string &tensor_name)
+{
+    auto *plugin_data = new SummaryMetadata::PluginData();
+    plugin_data->set_plugin_name("projector");
+    auto *meta = new SummaryMetadata();
+    meta->set_allocated_plugin_data(plugin_data);
+
+    std::string filename = "demo/projector_config.pbtxt";
+    auto *projectorconfig = new ProjectorConfig();
+    auto *embdedding = projectorconfig->add_embeddings();
+    embdedding->set_tensor_path(tensordata_path);
+    embdedding->set_metadata_path(metadata_path);
+    embdedding->set_tensor_name(tensor_name);
+    std::string str;
+    google::protobuf::TextFormat::PrintToString(*embdedding, &str);
+
+    str = "embeddings {\n" + str + "}";
+
+    fstream file(filename, std::ios::out);
+    file << str;
+
+    // Following line is just to add plugin and does not hold any meaning
+    auto *summary = new Summary();
+    auto *v = summary->add_value();
+    v->set_tag("projector_value");
+    v->set_allocated_metadata(meta);
+
+    return add_event(1, summary);
 }
 
 int TensorBoardLogger::add_event(int64_t step, Summary *summary) {

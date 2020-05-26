@@ -54,13 +54,14 @@ int test_log(const char* log_file) {
 
     // test add text
     logger.add_text("Text Sample", 1, "Hello World");
+    logger.projector("../assets/meta.tsv","../assets/vecs.tsv");
     return 0;
 }
 
 int main(int argc, char* argv[]) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    int ret = test_log("tfevents.pb");
+    int ret = test_log("demo/tfevents.pb");
     assert(ret == 0);
 
     // Optional:  Delete all global objects allocated by libprotobuf.
