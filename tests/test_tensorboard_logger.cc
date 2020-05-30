@@ -1,4 +1,5 @@
 #include <fstream>
+#include <iostream>
 #include <random>
 #include <sstream>
 #include <vector>
@@ -27,7 +28,7 @@ int test_log(const char* log_file) {
     ostringstream ss;
 
     ss << fin.rdbuf();
-    string image(ss.str());
+    string image1(ss.str());
     ss.str("");
     fin.close();
     fin.open("./assets/audio.jpg", ios::binary);
@@ -35,9 +36,19 @@ int test_log(const char* log_file) {
     string image2(ss.str());
     ss.str("");
     fin.close();
-    vector<string>encoded_images = {image, image2};
+
+    // add single image
+    logger.add_image("single image", 1, image1, 512, 512, 3, "Lena", "Lena");
+    logger.add_image("single image", 2, image2, 512, 512, 3, "TensorBoard",
+                     "Text");
+
+    // add multiple images
     logger.add_images(
-        "Image Sample", 1, 512, 512, encoded_images ,"Lena Forsén",
+        "Image Sample", 1, {image1, image2}, 512, 512, "Lena Forsén",
+        "Lenna or Lena is the name given to a standard test image widely used "
+        "in the field of image processing since 1973.");
+    logger.add_images(
+        "Image Sample", 2, {image2, image1}, 512, 512, "Lena Forsén",
         "Lenna or Lena is the name given to a standard test image widely used "
         "in the field of image processing since 1973.");
 
@@ -54,7 +65,10 @@ int test_log(const char* log_file) {
 
     // test add text
     logger.add_text("Text Sample", 1, "Hello World");
-    logger.projector("../assets/meta.tsv","../assets/vecs.tsv");
+
+    // test add embedding
+    logger.add_embedding("vocab", "../assets/vecs.tsv", "../assets/meta.tsv");
+    logger.add_embedding("another vocab without labels", "../assets/vecs.tsv");
     return 0;
 }
 

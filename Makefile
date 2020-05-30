@@ -2,7 +2,7 @@ PROTOC = protoc
 INCLUDES = -Iinclude
 LDFLAGS =  -lprotobuf
 
-CC = g++ -std=c++11
+CC = g++ -std=c++11 -O3
 
 PROTOS = $(wildcard proto/*.proto)
 SRCS = $(patsubst proto/%.proto,src/%.pb.cc,$(PROTOS))
@@ -31,7 +31,7 @@ test: tests/test_tensorboard_logger.cc lib
 	$(CC) $(INCLUDES) $< $(LIB) -o $@ $(LDFLAGS)
 
 clean:
-	rm -f src/*.o $(LIB) test tfevents.pb
+	rm -rf src/*.o $(LIB) test tfevents.pb demo
 
 distclean: clean
 	rm -f include/*.pb.h src/*.pb.cc

@@ -8,10 +8,16 @@
 
 #include "crc.h"
 #include "event.pb.h"
-#include "projector_config.pb.h"
 
 using tensorflow::Event;
 using tensorflow::Summary;
+
+// extract parent dir from path by finding the last slash
+std::string get_dir(const std::string &path);
+
+const std::string kProjectorConfigFile = "projector_config.pbtxt";
+const std::string kProjectorPluginName = "projector";
+const std::string kTextPluginName = "text";
 
 class TensorBoardLogger {
    public:
@@ -22,6 +28,7 @@ class TensorBoardLogger {
         if (!ofs_->is_open())
             throw std::runtime_error("failed to open log_file " +
                                      std::string(log_file));
+        log_dir_ = get_dir(log_file);
     }
     ~TensorBoardLogger() {
         ofs_->close();
@@ -34,15 +41,17 @@ class TensorBoardLogger {
     int add_histogram(const std::string &tag, int step, const float *value,
                       size_t num);
     int add_histogram(const std::string &tag, int step,
-                      std::vector<float> &value);
+                      const std::vector<float> &value);
+    // metadata (such as display_name, description) of the same tag will be
+    // striped to keep only the first one.
     int add_image(const std::string &tag, int step,
                   const std::string &encoded_image, int height, int width,
                   int channel, const std::string &display_name = "",
                   const std::string &description = "");
-    int add_images(const std::string &tag, int step, int height, int width,
-                const std::vector<std::string> &encoded_images,
-                const std::string &display_name = "",
-                const std::string &description = "");
+    int add_images(const std::string &tag, int step,
+                   const std::vector<std::string> &encoded_images, int height,
+                   int width, const std::string &display_name = "",
+                   const std::string &description = "");
     int add_audio(const std::string &tag, int step,
                   const std::string &encoded_audio, float sample_rate,
                   int num_channels, int length_frame,
@@ -50,15 +59,26 @@ class TensorBoardLogger {
                   const std::string &display_name = "",
                   const std::string &description = "");
     int add_text(const std::string &tag, int step, const char *text);
-    int projector(const std::string &metadata_path, const std::string &tensordata_path,
-                    const std::string &tensor_name="");
+
+    // `tensordata` and `metadata` should be in tsv format, and should be
+    // manually created before calling `add_embedding`
+    //
+    // `tensor_name` is mandated to differentiate tensors
+    //
+    // TODO add sprite image support
+    int add_embedding(const std::string &tensor_name,
+                      const std::string &tensordata_path,
+                      const std::string &metadata_path = "",
+                      int step = 1 /* no effect */);
 
    private:
     int generate_default_buckets();
     int add_event(int64_t step, Summary *summary);
     int write(Event &event);
 
+    std::string log_dir_;
     std::ofstream *ofs_;
     std::vector<double> *bucket_limits_;
-};      // class TensorBoardLogger
+};  // class TensorBoardLogger
+
 #endif  // TENSORBOARD_LOGGER_H

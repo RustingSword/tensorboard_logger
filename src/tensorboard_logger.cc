@@ -1,5 +1,7 @@
 #include "tensorboard_logger.h"
 
+#include <google/protobuf/text_format.h>
+
 #include <algorithm>  // std::lower_bound
 #include <cstdint>    // uint32_t, uint64_t
 #include <ctime>      // std::time
@@ -7,18 +9,21 @@
 #include <iostream>
 #include <limits>
 #include <random>
+#include <sstream>
 #include <string>
 #include <vector>
-#include <google/protobuf/text_format.h>
-#include <sstream>
+
+#include "event.pb.h"
+#include "projector_config.pb.h"
 
 using namespace std;
+using google::protobuf::TextFormat;
+using tensorflow::EmbeddingInfo;
 using tensorflow::Event;
 using tensorflow::HistogramProto;
-using tensorflow::Summary;
-using tensorflow::SpriteMetadata;
 using tensorflow::ProjectorConfig;
-using tensorflow::EmbeddingInfo;
+// using tensorflow::SpriteMetadata;
+using tensorflow::Summary;
 using tensorflow::SummaryMetadata;
 using tensorflow::TensorProto;
 
@@ -93,7 +98,7 @@ int TensorBoardLogger::add_histogram(const std::string &tag, int step,
 }
 
 int TensorBoardLogger::add_histogram(const string &tag, int step,
-                                     vector<float> &values) {
+                                     const vector<float> &values) {
     return add_histogram(tag, step, values.data(), values.size());
 }
 
@@ -128,10 +133,10 @@ int TensorBoardLogger::add_image(const string &tag, int step,
     return add_event(step, summary);
 }
 
-int TensorBoardLogger::add_images(const std::string &tag, int step, int height, int width,
-                                  const std::vector<std::string> &encoded_images,
-                                  const std::string &display_name,
-                                  const std::string &description) {
+int TensorBoardLogger::add_images(
+    const std::string &tag, int step,
+    const std::vector<std::string> &encoded_images, int height, int width,
+    const std::string &display_name, const std::string &description) {
     auto *plugin_data = new SummaryMetadata::PluginData();
     plugin_data->set_plugin_name("images");
     auto *meta = new SummaryMetadata();
@@ -143,8 +148,7 @@ int TensorBoardLogger::add_images(const std::string &tag, int step, int height, 
     tensor->set_dtype(tensorflow::DataType::DT_STRING);
     tensor->add_string_val(to_string(width));
     tensor->add_string_val(to_string(height));
-    for (const auto &image: encoded_images)
-        tensor->add_string_val(image);
+    for (const auto &image : encoded_images) tensor->add_string_val(image);
 
     auto *summary = new Summary();
     auto *v = summary->add_value();
@@ -181,7 +185,7 @@ int TensorBoardLogger::add_audio(const string &tag, int step,
 
 int TensorBoardLogger::add_text(const string &tag, int step, const char *text) {
     auto *plugin_data = new SummaryMetadata::PluginData();
-    plugin_data->set_plugin_name("text");
+    plugin_data->set_plugin_name(kTextPluginName);
 
     auto *meta = new SummaryMetadata();
     meta->set_allocated_plugin_data(plugin_data);
@@ -201,36 +205,49 @@ int TensorBoardLogger::add_text(const string &tag, int step, const char *text) {
     return add_event(step, summary);
 }
 
-int TensorBoardLogger::projector(const std::string &metadata_path,
-                                 const std::string &tensordata_path,
-                                 const std::string &tensor_name)
-{
+int TensorBoardLogger::add_embedding(const std::string &tensor_name,
+                                     const std::string &tensordata_path,
+                                     const std::string &metadata_path,
+                                     int step) {
     auto *plugin_data = new SummaryMetadata::PluginData();
-    plugin_data->set_plugin_name("projector");
+    plugin_data->set_plugin_name(kProjectorPluginName);
     auto *meta = new SummaryMetadata();
     meta->set_allocated_plugin_data(plugin_data);
 
-    std::string filename = "demo/projector_config.pbtxt";
-    auto *projectorconfig = new ProjectorConfig();
-    auto *embdedding = projectorconfig->add_embeddings();
-    embdedding->set_tensor_path(tensordata_path);
-    embdedding->set_metadata_path(metadata_path);
-    embdedding->set_tensor_name(tensor_name);
-    std::string str;
-    google::protobuf::TextFormat::PrintToString(*embdedding, &str);
+    const auto &filename = log_dir_ + kProjectorConfigFile;
+    auto *conf = new ProjectorConfig();
 
-    str = "embeddings {\n" + str + "}";
+    // parse possibly existing config file
+    ifstream fin(filename);
+    if (fin.is_open()) {
+        ostringstream ss;
+        ss << fin.rdbuf();
+        TextFormat::ParseFromString(ss.str(), conf);
+        fin.close();
+    }
 
-    fstream file(filename, std::ios::out);
-    file << str;
+    auto *embedding = conf->add_embeddings();
+    embedding->set_tensor_name(tensor_name);
+    embedding->set_tensor_path(tensordata_path);
+    if (metadata_path != "") {
+        embedding->set_metadata_path(metadata_path);
+    }
+
+    // `conf` and `embedding` will be deleted by ProjectorConfig destructor
+
+    ofstream fout(filename);
+    string content;
+    TextFormat::PrintToString(*conf, &content);
+    fout << content;
+    fout.close();
 
     // Following line is just to add plugin and does not hold any meaning
     auto *summary = new Summary();
     auto *v = summary->add_value();
-    v->set_tag("projector_value");
+    v->set_tag("embedding");
     v->set_allocated_metadata(meta);
 
-    return add_event(1, summary);
+    return add_event(step, summary);
 }
 
 int TensorBoardLogger::add_event(int64_t step, Summary *summary) {
@@ -256,4 +273,12 @@ int TensorBoardLogger::write(Event &event) {
     ofs_->write((char *)&data_crc, sizeof(uint32_t));  // NOLINT
     ofs_->flush();
     return 0;
+}
+
+string get_dir(const string &path) {
+    auto last_slash_pos = path.find_last_of("/\\");
+    if (last_slash_pos == string::npos) {
+        return "./";
+    }
+    return path.substr(0, last_slash_pos + 1);
 }
