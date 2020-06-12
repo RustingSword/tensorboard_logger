@@ -52,7 +52,7 @@ int TensorBoardLogger::generate_default_buckets() {
 
 // https://github.com/dmlc/tensorboard/blob/master/python/tensorboard/summary.py#L127
 int TensorBoardLogger::add_histogram(const std::string &tag, int step,
-                                     const float *value, size_t num) {
+                                     const double *value, size_t num) {
     if (bucket_limits_ == nullptr) {
         generate_default_buckets();
     }
@@ -63,7 +63,7 @@ int TensorBoardLogger::add_histogram(const std::string &tag, int step,
     double sum = 0.0;
     double sum_squares = 0.0;
     for (size_t i = 0; i < num; ++i) {
-        float v = value[i];
+        double v = value[i];
         auto lb =
             lower_bound(bucket_limits_->begin(), bucket_limits_->end(), v);
         counts[lb - bucket_limits_->begin()]++;
@@ -98,16 +98,32 @@ int TensorBoardLogger::add_histogram(const std::string &tag, int step,
 }
 
 int TensorBoardLogger::add_histogram(const string &tag, int step,
-                                     const vector<float> &values) {
+                                     const vector<float> &values_) {
+    std::vector<double> values(values_.begin(), values_.end());
     return add_histogram(tag, step, values.data(), values.size());
 }
 
-int TensorBoardLogger::add_scalar(const string &tag, int step, float value) {
+int TensorBoardLogger::add_histogram(const string &tag, int step,
+                                     const vector<double> &values) {
+    return add_histogram(tag, step, values.data(), values.size());
+}
+
+int TensorBoardLogger::add_histogram(const string &tag, int step,
+                                     const vector<int> &values_) {
+    std::vector<double> values(values_.begin(), values_.end());
+    return add_histogram(tag, step, values.data(), values.size());
+}
+
+int TensorBoardLogger::add_scalar(const string &tag, int step, double value) {
     auto *summary = new Summary();
     auto *v = summary->add_value();
     v->set_tag(tag);
     v->set_simple_value(value);
     return add_event(step, summary);
+}
+
+int TensorBoardLogger::add_scalar(const string &tag, int step, float value) {
+    return add_scalar(tag, step, (double) value);
 }
 
 int TensorBoardLogger::add_image(const string &tag, int step,

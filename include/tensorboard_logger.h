@@ -37,11 +37,16 @@ class TensorBoardLogger {
             bucket_limits_ = nullptr;
         }
     }
+    int add_scalar(const std::string &tag, int step, double value);
     int add_scalar(const std::string &tag, int step, float value);
-    int add_histogram(const std::string &tag, int step, const float *value,
+    int add_histogram(const std::string &tag, int step, const double *value,
                       size_t num);
     int add_histogram(const std::string &tag, int step,
                       const std::vector<float> &value);
+    int add_histogram(const std::string &tag, int step,
+                      const std::vector<int> &value);
+    int add_histogram(const std::string &tag, int step,
+                      const std::vector<double> &value);
     // metadata (such as display_name, description) of the same tag will be
     // striped to keep only the first one.
     int add_image(const std::string &tag, int step,
