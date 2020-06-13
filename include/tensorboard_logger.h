@@ -43,7 +43,7 @@ class TensorBoardLogger {
     int add_histogram(const std::string &tag, int step,
                       const std::vector<float> &value);
     // metadata (such as display_name, description) of the same tag will be
-    // striped to keep only the first one.
+    // stripped to keep only the first one.
     int add_image(const std::string &tag, int step,
                   const std::string &encoded_image, int height, int width,
                   int channel, const std::string &display_name = "",
