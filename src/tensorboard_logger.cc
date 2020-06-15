@@ -2,9 +2,9 @@
 
 #include <google/protobuf/text_format.h>
 
-#include <algorithm>  // std::lower_bound
-#include <cstdint>    // uint32_t, uint64_t
-#include <ctime>      // std::time
+#include <algorithm>
+#include <cstdint>
+#include <ctime>
 #include <fstream>
 #include <iostream>
 #include <limits>
@@ -110,6 +110,7 @@ int TensorBoardLogger::add_images(
 
     return add_event(step, summary);
 }
+
 int TensorBoardLogger::add_audio(const string &tag, int step,
                                  const string &encoded_audio, float sample_rate,
                                  int num_channels, int length_frame,
@@ -160,6 +161,7 @@ int TensorBoardLogger::add_text(const string &tag, int step, const char *text) {
 int TensorBoardLogger::add_embedding(const std::string &tensor_name,
                                      const std::string &tensordata_path,
                                      const std::string &metadata_path,
+                                     const std::vector<uint32_t> &tensor_shape,
                                      int step) {
     auto *plugin_data = new SummaryMetadata::PluginData();
     plugin_data->set_plugin_name(kProjectorPluginName);
@@ -184,6 +186,9 @@ int TensorBoardLogger::add_embedding(const std::string &tensor_name,
     if (metadata_path != "") {
         embedding->set_metadata_path(metadata_path);
     }
+    if (tensor_shape.size() > 0) {
+        for (auto shape : tensor_shape) embedding->add_tensor_shape(shape);
+    }
 
     // `conf` and `embedding` will be deleted by ProjectorConfig destructor
 
@@ -200,6 +205,42 @@ int TensorBoardLogger::add_embedding(const std::string &tensor_name,
     v->set_allocated_metadata(meta);
 
     return add_event(step, summary);
+}
+
+int TensorBoardLogger::add_embedding(
+    const std::string &tensor_name,
+    const std::vector<std::vector<float>> &tensor,
+    const std::string &tensordata_filename,
+    const std::vector<std::string> &metadata,
+    const std::string &metadata_filename, int step) {
+    ofstream binary_tensor_file(log_dir_ + tensordata_filename, ios::binary);
+    if (!binary_tensor_file.is_open()) {
+        throw std::runtime_error("failed to open binary tensor file " +
+                                 log_dir_ + tensordata_filename);
+    }
+
+    for (const auto &vec : tensor) {
+        binary_tensor_file.write(reinterpret_cast<const char *>(vec.data()),
+                                 vec.size() * sizeof(float));
+    }
+    binary_tensor_file.close();
+    if (metadata.size() > 0) {
+        if (metadata.size() != tensor.size()) {
+            throw std::runtime_error("tensor size != metadata size");
+        }
+        ofstream metadata_file(log_dir_ + metadata_filename);
+        if (!metadata_file.is_open()) {
+            throw std::runtime_error("failed to open metadata file " +
+                                     log_dir_ + metadata_filename);
+        }
+        for (const auto &meta : metadata) metadata_file << meta << endl;
+        metadata_file.close();
+    }
+    vector<uint32_t> tensor_shape;
+    tensor_shape.push_back(tensor.size());
+    tensor_shape.push_back(tensor[0].size());
+    return add_embedding(tensor_name, tensordata_filename, metadata_filename,
+                         tensor_shape, step);
 }
 
 int TensorBoardLogger::add_event(int64_t step, Summary *summary) {
@@ -227,7 +268,7 @@ int TensorBoardLogger::write(Event &event) {
     return 0;
 }
 
-string get_dir(const string &path) {
+string get_parent_dir(const string &path) {
     auto last_slash_pos = path.find_last_of("/\\");
     if (last_slash_pos == string::npos) {
         return "./";

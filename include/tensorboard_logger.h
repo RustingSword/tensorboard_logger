@@ -13,7 +13,7 @@ using tensorflow::Event;
 using tensorflow::Summary;
 
 // extract parent dir from path by finding the last slash
-std::string get_dir(const std::string &path);
+std::string get_parent_dir(const std::string &path);
 
 const std::string kProjectorConfigFile = "projector_config.pbtxt";
 const std::string kProjectorPluginName = "projector";
@@ -28,7 +28,7 @@ class TensorBoardLogger {
         if (!ofs_->is_open())
             throw std::runtime_error("failed to open log_file " +
                                      std::string(log_file));
-        log_dir_ = get_dir(log_file);
+        log_dir_ = get_parent_dir(log_file);
     }
     ~TensorBoardLogger() {
         ofs_->close();
@@ -41,7 +41,7 @@ class TensorBoardLogger {
     int add_scalar(const std::string &tag, int step, float value);
 
     // https://github.com/dmlc/tensorboard/blob/master/python/tensorboard/summary.py#L127
-    template<typename T>
+    template <typename T>
     int add_histogram(const std::string &tag, int step, const T *value,
                       size_t num) {
         if (bucket_limits_ == nullptr) {
@@ -55,8 +55,8 @@ class TensorBoardLogger {
         double sum_squares = 0.0;
         for (size_t i = 0; i < num; ++i) {
             T v = value[i];
-            auto lb =
-                std::lower_bound(bucket_limits_->begin(), bucket_limits_->end(), v);
+            auto lb = std::lower_bound(bucket_limits_->begin(),
+                                       bucket_limits_->end(), v);
             counts[lb - bucket_limits_->begin()]++;
             sum += v;
             sum_squares += v * v;
@@ -88,7 +88,7 @@ class TensorBoardLogger {
         return add_event(step, summary);
     };
 
-    template<typename T>
+    template <typename T>
     int add_histogram(const std::string &tag, int step,
                       const std::vector<T> &values) {
         return add_histogram(tag, step, values.data(), values.size());
@@ -118,10 +118,21 @@ class TensorBoardLogger {
     // `tensor_name` is mandated to differentiate tensors
     //
     // TODO add sprite image support
-    int add_embedding(const std::string &tensor_name,
-                      const std::string &tensordata_path,
-                      const std::string &metadata_path = "",
-                      int step = 1 /* no effect */);
+    int add_embedding(
+        const std::string &tensor_name, const std::string &tensordata_path,
+        const std::string &metadata_path = "",
+        const std::vector<uint32_t> &tensor_shape = std::vector<uint32_t>(),
+        int step = 1 /* no effect */);
+    // write tensor to binary file
+    // TensorBoard after commit 1ba4f06 support this
+    // TODO remove above line once next version of TensorBoard is released
+    int add_embedding(
+        const std::string &tensor_name,
+        const std::vector<std::vector<float>> &tensor,
+        const std::string &tensordata_filename,
+        const std::vector<std::string> &metadata = std::vector<std::string>(),
+        const std::string &metadata_filename = "",
+        int step = 1 /* no effect */);
 
    private:
     int generate_default_buckets();

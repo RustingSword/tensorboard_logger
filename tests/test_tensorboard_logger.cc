@@ -69,6 +69,29 @@ int test_log(const char* log_file) {
     // test add embedding
     logger.add_embedding("vocab", "../assets/vecs.tsv", "../assets/meta.tsv");
     logger.add_embedding("another vocab without labels", "../assets/vecs.tsv");
+
+    // test add binary embedding
+    vector<vector<float>> tensor;
+    string line;
+    ifstream vec_file("assets/vecs.tsv");
+    while (getline(vec_file, line)) {
+        istringstream values(line);
+        vector<float> vec;
+        copy(istream_iterator<float>(values), istream_iterator<float>(),
+             back_inserter(vec));
+        tensor.push_back(vec);
+    }
+    vec_file.close();
+
+    vector<string> meta;
+    ifstream meta_file("assets/meta.tsv");
+    while (getline(meta_file, line)) {
+        meta.push_back(line);
+    }
+    meta_file.close();
+    logger.add_embedding("binary tensor", tensor, "tensor.bin", meta,
+                         "binary_tensor.tsv");
+
     return 0;
 }
 
