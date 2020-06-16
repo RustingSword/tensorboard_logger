@@ -2,7 +2,7 @@ PROTOC = protoc
 INCLUDES = -Iinclude
 LDFLAGS =  -lprotobuf
 
-CC = g++ -std=c++11 -O3
+CC = g++ -std=c++11 -O3 -Wall
 
 PROTOS = $(wildcard proto/*.proto)
 SRCS = $(patsubst proto/%.proto,src/%.pb.cc,$(PROTOS))

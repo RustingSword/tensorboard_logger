@@ -243,6 +243,40 @@ int TensorBoardLogger::add_embedding(
                          tensor_shape, step);
 }
 
+int TensorBoardLogger::add_embedding(const std::string &tensor_name,
+                                     const float *tensor,
+                                     const std::vector<uint32_t> &tensor_shape,
+                                     const std::string &tensordata_filename,
+                                     const std::vector<std::string> &metadata,
+                                     const std::string &metadata_filename,
+                                     int step) {
+    ofstream binary_tensor_file(log_dir_ + tensordata_filename, ios::binary);
+    if (!binary_tensor_file.is_open()) {
+        throw std::runtime_error("failed to open binary tensor file " +
+                                 log_dir_ + tensordata_filename);
+    }
+
+    uint32_t num_elements = 1;
+    for (auto shape : tensor_shape) num_elements *= shape;
+    binary_tensor_file.write(reinterpret_cast<const char *>(tensor),
+                             num_elements * sizeof(float));
+    binary_tensor_file.close();
+    if (metadata.size() > 0) {
+        if (metadata.size() != tensor_shape[0]) {
+            throw std::runtime_error("tensor size != metadata size");
+        }
+        ofstream metadata_file(log_dir_ + metadata_filename);
+        if (!metadata_file.is_open()) {
+            throw std::runtime_error("failed to open metadata file " +
+                                     log_dir_ + metadata_filename);
+        }
+        for (const auto &meta : metadata) metadata_file << meta << endl;
+        metadata_file.close();
+    }
+    return add_embedding(tensor_name, tensordata_filename, metadata_filename,
+                         tensor_shape, step);
+}
+
 int TensorBoardLogger::add_event(int64_t step, Summary *summary) {
     Event event;
     double wall_time = time(nullptr);
@@ -257,13 +291,13 @@ int TensorBoardLogger::write(Event &event) {
     event.SerializeToString(&buf);
     auto buf_len = static_cast<uint64_t>(buf.size());
     uint32_t len_crc =
-        masked_crc32c((char *)&buf_len, sizeof(uint64_t));  // NOLINT
+        masked_crc32c((char *)&buf_len, sizeof(buf_len));  // NOLINT
     uint32_t data_crc = masked_crc32c(buf.c_str(), buf.size());
 
-    ofs_->write((char *)&buf_len, sizeof(uint64_t));  // NOLINT
-    ofs_->write((char *)&len_crc, sizeof(uint32_t));  // NOLINT
+    ofs_->write((char *)&buf_len, sizeof(buf_len));  // NOLINT
+    ofs_->write((char *)&len_crc, sizeof(len_crc));  // NOLINT
     ofs_->write(buf.c_str(), buf.size());
-    ofs_->write((char *)&data_crc, sizeof(uint32_t));  // NOLINT
+    ofs_->write((char *)&data_crc, sizeof(data_crc));  // NOLINT
     ofs_->flush();
     return 0;
 }

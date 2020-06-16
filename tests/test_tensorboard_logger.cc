@@ -74,11 +74,13 @@ int test_log(const char* log_file) {
     vector<vector<float>> tensor;
     string line;
     ifstream vec_file("assets/vecs.tsv");
+    uint32_t num_elements = 1;
     while (getline(vec_file, line)) {
         istringstream values(line);
         vector<float> vec;
         copy(istream_iterator<float>(values), istream_iterator<float>(),
              back_inserter(vec));
+        num_elements += vec.size();
         tensor.push_back(vec);
     }
     vec_file.close();
@@ -91,6 +93,20 @@ int test_log(const char* log_file) {
     meta_file.close();
     logger.add_embedding("binary tensor", tensor, "tensor.bin", meta,
                          "binary_tensor.tsv");
+
+    // test tensor stored as 1d array
+    float* tensor_1d = new float[num_elements];
+    for (int i = 0; i < tensor.size(); i++) {
+        const auto& vec = tensor[i];
+        memcpy(tensor_1d + i * vec.size(), vec.data(),
+               vec.size() * sizeof(float));
+    }
+    vector<uint32_t> tensor_shape;
+    tensor_shape.push_back(tensor.size());
+    tensor_shape.push_back(tensor[0].size());
+    logger.add_embedding("binary tensor 1d", tensor_1d, tensor_shape,
+                         "tensor_1d.bin", meta, "binary_tensor_1d.tsv");
+    delete[] tensor_1d;
 
     return 0;
 }

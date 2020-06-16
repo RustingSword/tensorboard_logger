@@ -133,6 +133,13 @@ class TensorBoardLogger {
         const std::vector<std::string> &metadata = std::vector<std::string>(),
         const std::string &metadata_filename = "",
         int step = 1 /* no effect */);
+    int add_embedding(
+        const std::string &tensor_name, const float *tensor,
+        const std::vector<uint32_t> &tensor_shape,
+        const std::string &tensordata_filename,
+        const std::vector<std::string> &metadata = std::vector<std::string>(),
+        const std::string &metadata_filename = "",
+        int step = 1 /* no effect */);
 
    private:
     int generate_default_buckets();
