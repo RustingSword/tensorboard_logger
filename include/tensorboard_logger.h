@@ -140,8 +140,18 @@ class TensorBoardLogger {
         const std::vector<std::string> &metadata = std::vector<std::string>(),
         const std::string &metadata_filename = "",
         int step = 1 /* no effect */);
-
+    int prcurve(const std::string tag,
+               const std::vector<double>labels,
+               const std::vector<double>predictions,
+               const int num_thresholds = 127,
+               std::vector<double>weights = {});
    private:
+    std::vector<std::vector<double>> compute_curve(
+        const std::vector<double>labels,
+        const std::vector<double>predictions,
+        const int num_thresholds = 127,
+        std::vector<double>weights = {});
+
     int generate_default_buckets();
     int add_event(int64_t step, Summary *summary);
     int write(Event &event);
