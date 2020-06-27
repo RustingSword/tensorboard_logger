@@ -144,15 +144,20 @@ class TensorBoardLogger {
                const std::vector<double>labels,
                const std::vector<double>predictions,
                const int num_thresholds = 127,
-               std::vector<double>weights = {});
+               std::vector<double>weights = {},
+               const std::string &display_name = "",
+               const std::string &description = "");
    private:
     std::vector<std::vector<double>> compute_curve(
         const std::vector<double>labels,
         const std::vector<double>predictions,
-        const int num_thresholds = 127,
+        int num_thresholds = 127,
         std::vector<double>weights = {});
-
-    int generate_default_buckets();
+    int generate_default_buckets(
+        std::vector<double> range = {(-1*1e-12), 1e20},
+        size_t num_of_bins = 10,
+        bool ignore_outside_range = false,
+        bool regenerate = false);
     int add_event(int64_t step, Summary *summary);
     int write(Event &event);
 

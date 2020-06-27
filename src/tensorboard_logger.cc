@@ -15,6 +15,7 @@
 
 #include "event.pb.h"
 #include "projector_config.pb.h"
+#include "plugin_pr_curve.pb.h"
 
 using namespace std;
 using google::protobuf::TextFormat;
@@ -26,27 +27,31 @@ using tensorflow::ProjectorConfig;
 using tensorflow::Summary;
 using tensorflow::SummaryMetadata;
 using tensorflow::TensorProto;
+using tensorflow::PrCurvePluginData;
+using tensorflow::TensorShapeProto;
 
 // https://github.com/dmlc/tensorboard/blob/master/python/tensorboard/summary.py#L115
-int TensorBoardLogger::generate_default_buckets() {
-    if (bucket_limits_ == nullptr) {
+int TensorBoardLogger::generate_default_buckets(std::vector<double> range,
+    size_t num_of_bins,
+    bool ignore_outside_range,
+    bool regenerate ) {
+    if (bucket_limits_ == nullptr || regenerate == true) {
         bucket_limits_ = new vector<double>;
-        vector<double> pos_buckets, neg_buckets;
-        double v = 1e-12;
-        while (v < 1e20) {
-            pos_buckets.push_back(v);
-            neg_buckets.push_back(-v);
-            v *= 1.1;
+        double v = range[0];
+        double width = (range[1] - range[0]) / num_of_bins ;
+        if (width == 0)
+            width = 1;
+        if(!ignore_outside_range)
+            bucket_limits_->push_back(numeric_limits<double>::lowest());
+        while (v <= range[1]) {
+            bucket_limits_->push_back(v);
+            v = v + width;
         }
-        pos_buckets.push_back(numeric_limits<double>::max());
-        neg_buckets.push_back(numeric_limits<double>::lowest());
-
-        bucket_limits_->insert(bucket_limits_->end(), neg_buckets.rbegin(),
-                               neg_buckets.rend());
-        bucket_limits_->insert(bucket_limits_->end(), pos_buckets.begin(),
-                               pos_buckets.end());
+        if(!ignore_outside_range)
+        {
+            bucket_limits_->push_back(numeric_limits<double>::max());
+        }
     }
-
     return 0;
 }
 
@@ -241,6 +246,121 @@ int TensorBoardLogger::add_embedding(
     tensor_shape.push_back(tensor[0].size());
     return add_embedding(tensor_name, tensordata_filename, metadata_filename,
                          tensor_shape, step);
+}
+
+std::vector<std::vector<double>> TensorBoardLogger::compute_curve(
+    const std::vector<double>labels,
+    const std::vector<double>predictions,
+    int num_thresholds,
+    std::vector<double>weights)
+{
+    // misbheaves when thresholds is greater than 127
+    num_thresholds = min(num_thresholds,127);
+    double min_count = 1e-7;
+    std::vector<std::vector<double>> data;
+    while (weights.size()<labels.size())
+    {
+        weights.push_back(1.0);
+    }
+    generate_default_buckets({0, (double)num_thresholds - 1}, num_thresholds, true, true);
+    vector<double> tp(bucket_limits_->size(), 0), fp(bucket_limits_->size(), 0);
+    
+    for (size_t i = 0; i < labels.size(); ++i)
+    {
+        float v = labels[i];
+        int item = predictions[i] * (num_thresholds -1);
+        auto lb =
+            lower_bound(bucket_limits_->begin(), bucket_limits_->end(), item);
+        {
+            tp[lb - bucket_limits_->begin()] = tp[lb - bucket_limits_->begin()] + (v*weights[i]);
+            fp[lb - bucket_limits_->begin()] = fp[lb - bucket_limits_->begin()] + ((1-v)*weights[i]);
+        }
+    }
+
+    // Reverse cummulative sum 
+    for(int i = tp.size() - 1; i >= 0 ;i--)
+    {
+        tp[i] = tp[i] + tp[i+1];
+        fp[i] = fp[i] + fp[i+1];
+    }
+    reverse(tp.begin(), tp.end());
+    reverse(fp.begin(), fp.end());
+    for(int i = tp.size() - 1; i >= 0 ;i--)
+    {
+
+        tp[i] = tp[i] + tp[i+1];
+        fp[i] = fp[i] + fp[i+1];
+    }
+    std::vector<double> tn(tp.size()), fn(tp.size()), precision(tp.size()), recall(tp.size());
+    for(size_t i = 0; i < tp.size() ;i++)
+    {
+        tn[i] = tp[0] - tp[i];
+        fn[i] = fp[0] - fp[i];
+        precision[i] = tp[i] / max(min_count,tp[i]+fp[i]);
+        recall[i] = tp[i] / max(min_count,tp[i]+fn[i]);
+    }
+    data.push_back(tp);
+    data.push_back(fp);
+    data.push_back(tn);
+    data.push_back(fn);
+    data.push_back(precision);
+    data.push_back(recall);
+    return data;
+}
+int TensorBoardLogger::prcurve(
+    const std::string tag,
+    const std::vector<double>labels, 
+    const std::vector<double>predictions, 
+    const int num_thresholds,
+    std::vector<double>weights,
+    const std::string &display_name,
+    const std::string &description)
+{
+    // Pr plugin
+    PrCurvePluginData *pr_curve_plugin = new PrCurvePluginData();
+    pr_curve_plugin->set_version(0);
+    pr_curve_plugin->set_num_thresholds(num_thresholds);
+    std::string pr_curve_content;
+    pr_curve_plugin->SerializeToString(&pr_curve_content);
+
+    // PluginMeta data
+    auto *plugin_data = new SummaryMetadata::PluginData();
+    plugin_data->set_plugin_name("pr_curves");
+    plugin_data->set_content(pr_curve_content);
+
+    // Summary Meta data
+    auto *meta = new SummaryMetadata();
+    meta->set_display_name(display_name == "" ? tag : display_name);
+    meta->set_summary_description(description);
+    meta->set_allocated_plugin_data(plugin_data);
+
+    std::vector<std::vector<double>> data =
+        compute_curve(labels, predictions, num_thresholds, weights);
+
+    // Prepare Tensor
+    auto *tensorshape = new TensorShapeProto();
+    auto rowdim = tensorshape->add_dim();
+    rowdim->set_size(data.size());
+    auto coldim = tensorshape->add_dim();
+    coldim->set_size(data[0].size());   
+    auto *tensor = new TensorProto();
+    tensor->set_dtype(tensorflow::DataType::DT_DOUBLE);
+    tensor->set_allocated_tensor_shape(tensorshape);
+    for(int i=0;i<data.size();i++)
+    {
+        for(int j=0;j<data[0].size();j++)
+        {
+            tensor->add_double_val(data[i][j]);
+        }
+    }
+
+    auto *summary = new Summary();
+    auto *v = summary->add_value();
+    v->set_tag(tag);
+    v->set_allocated_tensor(tensor);
+    v->set_allocated_metadata(meta);
+
+    return add_event(0, summary);    
 }
 
 int TensorBoardLogger::add_embedding(const std::string &tensor_name,

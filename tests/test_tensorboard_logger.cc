@@ -106,7 +106,18 @@ int test_log(const char* log_file) {
     tensor_shape.push_back(tensor[0].size());
     logger.add_embedding("binary tensor 1d", tensor_1d, tensor_shape,
                          "tensor_1d.bin", meta, "binary_tensor_1d.tsv");
-    delete[] tensor_1d;
+   delete[] tensor_1d;
+
+    // test pr curver
+    vector<double> labels, predictions;
+    for(int i=0;i<100;i++)
+    {
+        double item = (double) rand()/RAND_MAX;
+        double sem_item = (double) rand()/RAND_MAX;
+        labels.push_back(round(sem_item));
+        predictions.push_back(item);
+    }   
+    logger.prcurve("pr_curve",labels,predictions,127);
 
     return 0;
 }
