@@ -271,31 +271,24 @@ std::vector<std::vector<double>> TensorBoardLogger::compute_curve(
         int item = predictions[i] * (num_thresholds -1);
         auto lb =
             lower_bound(bucket_limits_->begin(), bucket_limits_->end(), item);
-        {
-            tp[lb - bucket_limits_->begin()] = tp[lb - bucket_limits_->begin()] + (v*weights[i]);
-            fp[lb - bucket_limits_->begin()] = fp[lb - bucket_limits_->begin()] + ((1-v)*weights[i]);
-        }
+        if(*lb != item)
+            lb--;        
+        tp[lb - bucket_limits_->begin()] = tp[lb - bucket_limits_->begin()] + (v*weights[i]);
+        fp[lb - bucket_limits_->begin()] = fp[lb - bucket_limits_->begin()] + ((1-v)*weights[i]);
+        
     }
 
     // Reverse cummulative sum 
-    for(int i = tp.size() - 1; i >= 0 ;i--)
+    for(int i = tp.size() - 2; i >= 0 ;i--)
     {
-        tp[i] = tp[i] + tp[i+1];
-        fp[i] = fp[i] + fp[i+1];
-    }
-    reverse(tp.begin(), tp.end());
-    reverse(fp.begin(), fp.end());
-    for(int i = tp.size() - 1; i >= 0 ;i--)
-    {
-
         tp[i] = tp[i] + tp[i+1];
         fp[i] = fp[i] + fp[i+1];
     }
     std::vector<double> tn(tp.size()), fn(tp.size()), precision(tp.size()), recall(tp.size());
     for(size_t i = 0; i < tp.size() ;i++)
     {
-        tn[i] = tp[0] - tp[i];
-        fn[i] = fp[0] - fp[i];
+        fn[i] = tp[0] - tp[i];
+        tn[i] = fp[0] - fp[i];
         precision[i] = tp[i] / max(min_count,tp[i]+fp[i]);
         recall[i] = tp[i] / max(min_count,tp[i]+fn[i]);
     }
