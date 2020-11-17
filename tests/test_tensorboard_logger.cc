@@ -96,7 +96,7 @@ int test_log(const char* log_file) {
 
     // test tensor stored as 1d array
     float* tensor_1d = new float[num_elements];
-    for (int i = 0; i < tensor.size(); i++) {
+    for (size_t i = 0; i < tensor.size(); i++) {
         const auto& vec = tensor[i];
         memcpy(tensor_1d + i * vec.size(), vec.data(),
                vec.size() * sizeof(float));

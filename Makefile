@@ -1,6 +1,6 @@
 PROTOC = protoc
 INCLUDES = -Iinclude
-LDFLAGS =  -lprotobuf
+LDFLAGS =  -lprotobuf -lpthread
 
 CC = g++ -std=c++11 -O3 -Wall
 

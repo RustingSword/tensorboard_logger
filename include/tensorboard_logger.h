@@ -124,8 +124,6 @@ class TensorBoardLogger {
         const std::vector<uint32_t> &tensor_shape = std::vector<uint32_t>(),
         int step = 1 /* no effect */);
     // write tensor to binary file
-    // TensorBoard after commit 1ba4f06 support this
-    // TODO remove above line once next version of TensorBoard is released
     int add_embedding(
         const std::string &tensor_name,
         const std::vector<std::vector<float>> &tensor,
