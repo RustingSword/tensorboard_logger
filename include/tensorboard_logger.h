@@ -8,6 +8,7 @@
 
 #include "crc.h"
 #include "event.pb.h"
+#include "plugin_pr_curve.pb.h"
 
 using tensorflow::Event;
 using tensorflow::Summary;
@@ -44,9 +45,10 @@ class TensorBoardLogger {
     template <typename T>
     int add_histogram(const std::string &tag, int step, const T *value,
                       size_t num) {
-        if (bucket_limits_ == nullptr) {
-            generate_default_buckets();
-        }
+
+        double max_range = static_cast<double>(*(std::max(value,value+num-1)));
+        double min_range = static_cast<double>(*(std::min(value,value+num-1)));
+        generate_default_buckets({max_range, min_range}, num, false, true);
 
         std::vector<int> counts(bucket_limits_->size(), 0);
         double min = std::numeric_limits<double>::max();
@@ -138,9 +140,24 @@ class TensorBoardLogger {
         const std::vector<std::string> &metadata = std::vector<std::string>(),
         const std::string &metadata_filename = "",
         int step = 1 /* no effect */);
-
+    int prcurve(const std::string tag,
+               const std::vector<double>labels,
+               const std::vector<double>predictions,
+               const int num_thresholds = 127,
+               std::vector<double>weights = {},
+               const std::string &display_name = "",
+               const std::string &description = "");
    private:
-    int generate_default_buckets();
+    std::vector<std::vector<double>> compute_curve(
+        const std::vector<double>labels,
+        const std::vector<double>predictions,
+        int num_thresholds = 127,
+        std::vector<double>weights = {});
+    int generate_default_buckets(
+        std::vector<double> range = {(-1*1e-12), 1e20},
+        size_t num_of_bins = 10,
+        bool ignore_outside_range = false,
+        bool regenerate = false);
     int add_event(int64_t step, Summary *summary);
     int write(Event &event);
 

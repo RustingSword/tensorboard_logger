@@ -11,6 +11,7 @@ Only support `scalar`, `histogram`, `image`, `audio` `text` and `projector` at t
 ![text](./assets/text.jpg)
 ![embedding](./assets/embedding.png)
 ![multiple-image](./assets/multi-image.png)
+![pr-curve](./assets/pr_curve.png)
 
 # Acknowledgement
 
