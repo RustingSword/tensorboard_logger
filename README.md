@@ -7,7 +7,7 @@ Only support `scalar`, `histogram`, `image`, `audio` `text` and `projector` at t
 ```bash
 > mkdir build && cd build && cmake .. && cmake --build . -j
 > cd .. && mkdir demo && ./test
-> tensorboard --logdir .  # try adding --fast_load=false if you don't see projector tab
+> tensorboard --logdir .  # try adding --load_fast=false if you don't see projector tab
 ```
 
 ![scalar](./assets/scalar.png)
