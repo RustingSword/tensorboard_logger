@@ -16,7 +16,14 @@
 #include "event.pb.h"
 #include "projector_config.pb.h"
 
-using namespace std;
+using std::endl;
+using std::ifstream;
+using std::numeric_limits;
+using std::ofstream;
+using std::ostringstream;
+using std::string;
+using std::to_string;
+using std::vector;
 using google::protobuf::TextFormat;
 using tensorflow::EmbeddingInfo;
 using tensorflow::Event;
@@ -38,8 +45,8 @@ int TensorBoardLogger::generate_default_buckets() {
             neg_buckets.push_back(-v);
             v *= 1.1;
         }
-        pos_buckets.push_back(numeric_limits<double>::max());
-        neg_buckets.push_back(numeric_limits<double>::lowest());
+        pos_buckets.push_back(std::numeric_limits<double>::max());
+        neg_buckets.push_back(std::numeric_limits<double>::lowest());
 
         bucket_limits_->insert(bucket_limits_->end(), neg_buckets.rbegin(),
                                neg_buckets.rend());
@@ -68,7 +75,7 @@ int TensorBoardLogger::add_image(const string &tag, int step,
                                  const string &display_name,
                                  const string &description) {
     auto *meta = new SummaryMetadata();
-    meta->set_display_name(display_name == "" ? tag : display_name);
+    meta->set_display_name(display_name.empty() ? tag : display_name);
     meta->set_summary_description(description);
 
     auto *image = new Summary::Image();
@@ -92,7 +99,7 @@ int TensorBoardLogger::add_images(
     auto *plugin_data = new SummaryMetadata::PluginData();
     plugin_data->set_plugin_name("images");
     auto *meta = new SummaryMetadata();
-    meta->set_display_name(display_name == "" ? tag : display_name);
+    meta->set_display_name(display_name.empty() ? tag : display_name);
     meta->set_summary_description(description);
     meta->set_allocated_plugin_data(plugin_data);
 
@@ -118,7 +125,7 @@ int TensorBoardLogger::add_audio(const string &tag, int step,
                                  const string &display_name,
                                  const string &description) {
     auto *meta = new SummaryMetadata();
-    meta->set_display_name(display_name == "" ? tag : display_name);
+    meta->set_display_name(display_name.empty() ? tag : display_name);
     meta->set_summary_description(description);
 
     auto *audio = new Summary::Audio();
@@ -213,7 +220,7 @@ int TensorBoardLogger::add_embedding(
     const std::string &tensordata_filename,
     const std::vector<std::string> &metadata,
     const std::string &metadata_filename, int step) {
-    ofstream binary_tensor_file(log_dir_ + tensordata_filename, ios::binary);
+    ofstream binary_tensor_file(log_dir_ + tensordata_filename, std::ios::binary);
     if (!binary_tensor_file.is_open()) {
         throw std::runtime_error("failed to open binary tensor file " +
                                  log_dir_ + tensordata_filename);
@@ -250,7 +257,7 @@ int TensorBoardLogger::add_embedding(const std::string &tensor_name,
                                      const std::vector<std::string> &metadata,
                                      const std::string &metadata_filename,
                                      int step) {
-    ofstream binary_tensor_file(log_dir_ + tensordata_filename, ios::binary);
+    ofstream binary_tensor_file(log_dir_ + tensordata_filename, std::ios::binary);
     if (!binary_tensor_file.is_open()) {
         throw std::runtime_error("failed to open binary tensor file " +
                                  log_dir_ + tensordata_filename);

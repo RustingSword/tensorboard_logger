@@ -8,64 +8,84 @@
 
 using namespace std;
 
-int test_log(const char* log_file) {
-    TensorBoardLogger logger(log_file);
+string read_binary_file(const string filename) {
+    ostringstream ss;
+    ifstream fin(filename, ios::binary);
+    if (!fin) {
+        std::cerr << "failed to open file " << filename << std::endl;
+        return "";
+    }
+    ss << fin.rdbuf();
+    fin.close();
+    return ss.str();
+}
 
-    // test scalar and histogram
+int test_log_scalar(TensorBoardLogger& logger) {
+    cout << "test log scalar" << endl;
     default_random_engine generator;
     normal_distribution<double> default_distribution(0, 1.0);
+    for (int i = 0; i < 10; ++i) {
+        logger.add_scalar("scalar", i, default_distribution(generator));
+    }
+
+    return 0;
+}
+
+int test_log_histogram(TensorBoardLogger& logger) {
+    cout << "test log histogram" << endl;
+    default_random_engine generator;
     for (int i = 0; i < 10; ++i) {
         normal_distribution<double> distribution(i * 0.1, 1.0);
         vector<float> values;
         for (int j = 0; j < 10000; ++j)
             values.push_back(distribution(generator));
-        logger.add_histogram("param", i, values);
-        logger.add_scalar("acc", i, default_distribution(generator));
+        logger.add_histogram("histogram", i, values);
     }
 
-    // test add image
-    ifstream fin("./assets/Lenna_(test_image).png", ios::binary);
-    ostringstream ss;
+    return 0;
+}
 
-    ss << fin.rdbuf();
-    string image1(ss.str());
-    ss.str("");
-    fin.close();
-    fin.open("./assets/audio.jpg", ios::binary);
-    ss << fin.rdbuf();
-    string image2(ss.str());
-    ss.str("");
-    fin.close();
+int test_log_image(TensorBoardLogger& logger) {
+    cout << "test log image" << endl;
+    // read images
+    auto image1 = read_binary_file("./assets/text.jpg");
+    auto image2 = read_binary_file("./assets/audio.jpg");
 
     // add single image
-    logger.add_image("single image", 1, image1, 512, 512, 3, "Lena", "Lena");
-    logger.add_image("single image", 2, image2, 512, 512, 3, "TensorBoard",
-                     "Text");
+    logger.add_image("TensorBoard Text Plugin", 1, image1, 1502, 632, 3,
+                     "TensorBoard", "Text");
+    logger.add_image("TensorBoard Audo Plugin", 1, image2, 1472, 640, 3,
+                     "TensorBoard", "Audio");
 
     // add multiple images
-    logger.add_images(
-        "Image Sample", 1, {image1, image2}, 512, 512, "Lena Forsén",
-        "Lenna or Lena is the name given to a standard test image widely used "
-        "in the field of image processing since 1973.");
-    logger.add_images(
-        "Image Sample", 2, {image2, image1}, 512, 512, "Lena Forsén",
-        "Lenna or Lena is the name given to a standard test image widely used "
-        "in the field of image processing since 1973.");
+    // FIXME This seems doesn't work anymore.
+    // logger.add_images(
+    //     "Multiple Images", 1, {image1, image2}, 1502, 632, "test", "not
+    //     working");
 
-    // test add audio
-    fin.open("./assets/file_example_WAV_1MG.wav", ios::binary);
-    ss << fin.rdbuf();
-    string audio(ss.str());
-    fin.close();
-    ss.str("");
+    return 0;
+}
+
+int test_log_audio(TensorBoardLogger& logger) {
+    cout << "test log audio" << endl;
+    auto audio = read_binary_file("./assets/file_example_WAV_1MG.wav");
     logger.add_audio("Audio Sample", 1, audio, 8000, 2, 8000 * 16 * 2 * 33,
                      "audio/wav", "Impact Moderato",
                      "https://file-examples.com/index.php/sample-audio-files/"
                      "sample-wav-download/");
 
-    // test add text
+    return 0;
+}
+
+int test_log_text(TensorBoardLogger& logger) {
+    cout << "test log text" << endl;
     logger.add_text("Text Sample", 1, "Hello World");
 
+    return 0;
+}
+
+int test_log_embedding(TensorBoardLogger& logger) {
+    cout << "test log embedding" << endl;
     // test add embedding
     logger.add_embedding("vocab", "../assets/vecs.tsv", "../assets/meta.tsv");
     logger.add_embedding("another vocab without labels", "../assets/vecs.tsv");
@@ -111,10 +131,23 @@ int test_log(const char* log_file) {
     return 0;
 }
 
+int test_log(const char* log_file) {
+    TensorBoardLogger logger(log_file);
+
+    test_log_scalar(logger);
+    test_log_histogram(logger);
+    test_log_image(logger);
+    test_log_audio(logger);
+    test_log_text(logger);
+    test_log_embedding(logger);
+
+    return 0;
+}
+
 int main(int argc, char* argv[]) {
     GOOGLE_PROTOBUF_VERIFY_VERSION;
 
-    int ret = test_log("demo/tfevents.pb");
+    int ret = test_log("./demo/tfevents.pb");
     assert(ret == 0);
 
     // Optional:  Delete all global objects allocated by libprotobuf.
