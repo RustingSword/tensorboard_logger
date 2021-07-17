@@ -5,8 +5,11 @@ LABEL description="Standalone TensorBoard logger API in C++" \
       version="1.0" \
       url="https://github.com/RustingSword/tensorboard_logger"
 
+ENV DEBIAN_FRONTEND="noninteractive" TZ="Etc/UTC"
+
 RUN apt-get update && apt-get install -y \
     g++ \
+    cmake \
     make \
     git \
     libprotobuf-dev \

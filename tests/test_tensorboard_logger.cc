@@ -48,13 +48,13 @@ int test_log_histogram(TensorBoardLogger& logger) {
 int test_log_image(TensorBoardLogger& logger) {
     cout << "test log image" << endl;
     // read images
-    auto image1 = read_binary_file("./assets/text.jpg");
-    auto image2 = read_binary_file("./assets/audio.jpg");
+    auto image1 = read_binary_file("./assets/text.png");
+    auto image2 = read_binary_file("./assets/audio.png");
 
     // add single image
-    logger.add_image("TensorBoard Text Plugin", 1, image1, 1502, 632, 3,
+    logger.add_image("TensorBoard Text Plugin", 1, image1, 1864, 822, 3,
                      "TensorBoard", "Text");
-    logger.add_image("TensorBoard Audo Plugin", 1, image2, 1472, 640, 3,
+    logger.add_image("TensorBoard Audo Plugin", 1, image2, 1766, 814, 3,
                      "TensorBoard", "Audio");
 
     // add multiple images
