@@ -7,30 +7,21 @@ find_package(Protobuf REQUIRED)
 
 file(GLOB protos "proto/*.proto")
 
-if(NOT PROTOBUF_FOUND)
-    message (FATAL_ERROR "Cannot find Protobuf")
-endif()
-
-file(GLOB sources "src/*.cc")
-
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${protos})
 
-set(TENSORBOARD_INCLUDE_PATH
-  ${PROJECT_SOURCE_DIR}/include
-  ${PROJECT_BINARY_DIR})
-
-include_directories(
-    ${TENSORBOARD_INCLUDE_PATH}
-    ${Protobuf_INCLUDE_DIRS}
-)
-
 add_library(tensorboard_logger STATIC
-  ${sources}
-  ${PROTO_SRCS}
+    "src/crc.cc"
+    "src/tensorboard_logger.cc"
+    ${PROTO_SRCS}
 )
+target_include_directories(tensorboard_logger PUBLIC
+    ${PROJECT_SOURCE_DIR}/include
+    ${Protobuf_INCLUDE_DIRS}
+    ${PROJECT_BINARY_DIR}
+    )
+target_link_libraries(tensorboard_logger PUBLIC ${Protobuf_LIBRARIES})
 
 add_executable(test
     tests/test_tensorboard_logger.cc
 )
-
-target_link_libraries(test tensorboard_logger ${Protobuf_LIBRARIES})
+target_link_libraries(test tensorboard_logger)
