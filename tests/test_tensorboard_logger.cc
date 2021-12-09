@@ -8,7 +8,7 @@
 
 using namespace std;
 
-string read_binary_file(const string filename) {
+string read_binary_file(const string& filename) {
     ostringstream ss;
     ifstream fin(filename, ios::binary);
     if (!fin) {
