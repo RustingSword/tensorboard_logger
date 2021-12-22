@@ -21,10 +21,12 @@ const std::string kTextPluginName = "text";
 
 class TensorBoardLogger {
    public:
-    explicit TensorBoardLogger(const char *log_file) {
+    explicit TensorBoardLogger(const char *log_file, bool resume = false) {
         bucket_limits_ = nullptr;
         ofs_ = new std::ofstream(
-            log_file, std::ios::out | std::ios::trunc | std::ios::binary);
+            log_file, std::ios::out |
+                          (resume ? std::ios::app : std::ios::trunc) |
+                          std::ios::binary);
         if (!ofs_->is_open())
             throw std::runtime_error("failed to open log_file " +
                                      std::string(log_file));
