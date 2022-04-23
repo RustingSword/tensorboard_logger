@@ -12,8 +12,9 @@
 using tensorflow::Event;
 using tensorflow::Summary;
 
-// extract parent dir from path by finding the last slash
+// extract parent dir or basename from path by finding the last slash
 std::string get_parent_dir(const std::string &path);
+std::string get_basename(const std::string &path);
 
 const std::string kProjectorConfigFile = "projector_config.pbtxt";
 const std::string kProjectorPluginName = "projector";
@@ -21,7 +22,14 @@ const std::string kTextPluginName = "text";
 
 class TensorBoardLogger {
    public:
-    explicit TensorBoardLogger(const char *log_file, bool resume = false) {
+    explicit TensorBoardLogger(const std::string &log_file,
+                               bool resume = false) {
+        auto basename = get_basename(log_file);
+        if (basename.find("tfevents") == std::string::npos) {
+            throw std::runtime_error(
+                "A valid event file must contain substring \"tfevents\" in its "
+                "basename, got " + basename);
+        }
         bucket_limits_ = nullptr;
         ofs_ = new std::ofstream(
             log_file, std::ios::out |

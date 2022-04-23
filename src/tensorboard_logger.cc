@@ -316,3 +316,11 @@ string get_parent_dir(const string &path) {
     }
     return path.substr(0, last_slash_pos + 1);
 }
+
+string get_basename(const string &path) {
+    auto last_slash_pos = path.find_last_of("/\\");
+    if (last_slash_pos == string::npos) {
+        return path;
+    }
+    return path.substr(last_slash_pos + 1);
+}
