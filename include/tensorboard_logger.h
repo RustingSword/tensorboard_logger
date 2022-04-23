@@ -35,9 +35,9 @@ class TensorBoardLogger {
             log_file, std::ios::out |
                           (resume ? std::ios::app : std::ios::trunc) |
                           std::ios::binary);
-        if (!ofs_->is_open())
-            throw std::runtime_error("failed to open log_file " +
-                                     std::string(log_file));
+        if (!ofs_->is_open()) {
+            throw std::runtime_error("failed to open log_file " + log_file);
+        }
         log_dir_ = get_parent_dir(log_file);
     }
     ~TensorBoardLogger() {
