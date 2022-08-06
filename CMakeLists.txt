@@ -33,6 +33,8 @@ target_link_libraries(tensorboard_logger PUBLIC ${Protobuf_LIBRARIES})
 
 if (BUILD_TEST)
     add_executable(tensorboard_logger_test tests/test_tensorboard_logger.cc)
+    target_compile_features(tensorboard_logger_test PRIVATE cxx_std_11)
+    target_compile_options(tensorboard_logger_test PRIVATE -Wall -O2)
     target_include_directories(tensorboard_logger_test
     PRIVATE
         $<BUILD_INTERFACE:${CMAKE_CURRENT_BINARY_DIR}>

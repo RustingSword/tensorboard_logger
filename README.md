@@ -15,15 +15,16 @@ To build and install TensorBoard Logger with cmake:
 > mkdir -p $BUILD_DIR && cmake -B $BUILD_DIR . && cmake --build $BUILD_DIR -j
 > cmake --install $BUILD_DIR
 ```
+
 Then use `find_package(tensorboard_logger REQUIRED)` in your project.
 
 Alternatively use via cmake FetchContent:
 
 ```cmake
 FetchContent_Declare(
-	tensorboard_logger
-	GIT_REPOSITORY      https://github.com/RustingSword/tensorboard_logger.git
-	GIT_TAG             master
+    tensorboard_logger
+    GIT_REPOSITORY      https://github.com/RustingSword/tensorboard_logger.git
+    GIT_TAG             master
 )
 FetchContent_MakeAvailable(tensorboard_logger)
 ```
@@ -48,10 +49,10 @@ To run the test:
 ![text](./assets/text.png)
 ![embedding](./assets/embedding.png)
 
-# Acknowledgement
+## Acknowledgement
 
 - Inspired by [dmlc tensorboard](https://github.com/dmlc/tensorboard) project.
 
-- CRC code from [The SNIPPETS Portable C/C++ Source Code Collection](http://web.archive.org/web/20080303102530/http://c.snippets.org/snip_lister.php?fname=crc_32.c), via http://stackoverflow.com/a/303020, with some modifications.
+- CRC code from [The SNIPPETS Portable C/C++ Source Code Collection](http://web.archive.org/web/20080303102530/http://c.snippets.org/snip_lister.php?fname=crc_32.c), via <http://stackoverflow.com/a/303020>, with some modifications.
 
 - Audio sample from [File Examples](https://file-examples.com/index.php/sample-audio-files/sample-wav-download/).
