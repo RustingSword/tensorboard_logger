@@ -5,6 +5,9 @@
 #include <fstream>
 #include <string>
 #include <vector>
+#include <atomic>
+#include <thread>
+#include <mutex>
 
 #include "crc.h"
 #include "event.pb.h"
@@ -20,10 +23,37 @@ const std::string kProjectorConfigFile = "projector_config.pbtxt";
 const std::string kProjectorPluginName = "projector";
 const std::string kTextPluginName = "text";
 
+
+struct TensorBoardLoggerOptions
+{
+    // Log is flushed whenever this many entries have been written since the last
+    // forced flush.
+    size_t max_queue_size_ = 100000;
+    TensorBoardLoggerOptions &max_queue_size(size_t max_queue_size) {
+        max_queue_size_ = max_queue_size;
+        return *this;
+    }
+
+    // Log is flushed with this period.
+    size_t flush_period_s_ = 60;
+    TensorBoardLoggerOptions &flush_period_s(size_t flush_period_s) {
+        flush_period_s_ = flush_period_s;
+        return *this;
+    }
+
+    bool resume_ = false;
+    TensorBoardLoggerOptions &resume(bool resume) {
+        resume_ = resume;
+        return *this;
+    }
+};
+
 class TensorBoardLogger {
    public:
+    
     explicit TensorBoardLogger(const std::string &log_file,
-                               bool resume = false) {
+                               const TensorBoardLoggerOptions &options={}) {
+        this->options = options;
         auto basename = get_basename(log_file);
         if (basename.find("tfevents") == std::string::npos) {
             throw std::runtime_error(
@@ -33,18 +63,25 @@ class TensorBoardLogger {
         bucket_limits_ = nullptr;
         ofs_ = new std::ofstream(
             log_file, std::ios::out |
-                          (resume ? std::ios::app : std::ios::trunc) |
+                          (options.resume_ ? std::ios::app : std::ios::trunc) |
                           std::ios::binary);
         if (!ofs_->is_open()) {
             throw std::runtime_error("failed to open log_file " + log_file);
         }
         log_dir_ = get_parent_dir(log_file);
+
+        flushing_thread = std::thread(&TensorBoardLogger::flusher, this);
     }
     ~TensorBoardLogger() {
         ofs_->close();
         if (bucket_limits_ != nullptr) {
             delete bucket_limits_;
             bucket_limits_ = nullptr;
+        }
+
+        stop = true;
+        if (flushing_thread.joinable()) {
+            flushing_thread.join();
         }
     }
     int add_scalar(const std::string &tag, int step, double value);
@@ -153,10 +190,17 @@ class TensorBoardLogger {
     int generate_default_buckets();
     int add_event(int64_t step, Summary *summary);
     int write(Event &event);
+    void flusher();
 
     std::string log_dir_;
     std::ofstream *ofs_;
     std::vector<double> *bucket_limits_;
+    TensorBoardLoggerOptions options;
+    
+    std::atomic<bool> stop{false};
+    size_t queue_size{0};
+    std::thread flushing_thread;
+    std::mutex file_object_mtx{};
 };  // class TensorBoardLogger
 
 #endif  // TENSORBOARD_LOGGER_H

@@ -118,6 +118,24 @@ int TensorBoardLogger::add_images(
     return add_event(step, summary);
 }
 
+void TensorBoardLogger::flusher()
+{
+    auto period = std::chrono::seconds(options.flush_period_s_);
+    auto next_flush_time = std::chrono::high_resolution_clock::now() + period;
+
+    while (!stop)
+    {
+        if (std::chrono::high_resolution_clock::now() < next_flush_time) {
+            std::this_thread::sleep_for(std::chrono::seconds(1));
+            continue;
+        }
+
+        std::lock_guard<std::mutex> lock{file_object_mtx};
+        ofs_->flush();
+        next_flush_time = std::chrono::high_resolution_clock::now() + period;
+    }
+}
+
 int TensorBoardLogger::add_audio(const string &tag, int step,
                                  const string &encoded_audio, float sample_rate,
                                  int num_channels, int length_frame,
@@ -301,11 +319,18 @@ int TensorBoardLogger::write(Event &event) {
         masked_crc32c((char *)&buf_len, sizeof(buf_len));  // NOLINT
     uint32_t data_crc = masked_crc32c(buf.c_str(), buf.size());
 
+    std::lock_guard<std::mutex> lock{file_object_mtx};
+
     ofs_->write((char *)&buf_len, sizeof(buf_len));  // NOLINT
     ofs_->write((char *)&len_crc, sizeof(len_crc));  // NOLINT
     ofs_->write(buf.c_str(), buf.size());
     ofs_->write((char *)&data_crc, sizeof(data_crc));  // NOLINT
-    ofs_->flush();
+    
+    if (queue_size++ > options.max_queue_size_) {
+        ofs_->flush();
+        queue_size = 0;
+    }
+
     return 0;
 }
 
