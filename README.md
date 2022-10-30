@@ -16,6 +16,14 @@ To build and install TensorBoard Logger with cmake:
 > cmake --install $BUILD_DIR
 ```
 
+Alternatively to build a shared library set `BUILD_SHARED_LIBS=ON`:
+
+```bash
+> BUILD_DIR=build
+> mkdir -p $BUILD_DIR && cmake -B $BUILD_DIR -DBUILD_SHARED_LIBS=ON . && cmake --build $BUILD_DIR -j
+> cmake --install $BUILD_DIR
+```
+
 Then use `find_package(tensorboard_logger REQUIRED)` in your project.
 
 Alternatively use via cmake FetchContent:
