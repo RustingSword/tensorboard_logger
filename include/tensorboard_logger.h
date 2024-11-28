@@ -74,6 +74,7 @@ class TensorBoardLogger {
     }
     ~TensorBoardLogger() {
         ofs_->close();
+        delete ofs_;
         if (bucket_limits_ != nullptr) {
             delete bucket_limits_;
             bucket_limits_ = nullptr;
