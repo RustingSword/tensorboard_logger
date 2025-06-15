@@ -1,0 +1,8 @@
+"""Module definition for tensorboard_logger."""
+
+module(
+    name = "tensorboard_logger",
+    version = "0.1.0",
+)
+
+bazel_dep(name = "protobuf", version = "31.1")
