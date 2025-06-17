@@ -1,0 +1,60 @@
+package(default_visibility = ["//visibility:public"])
+
+filegroup(
+    name = "assets",
+    srcs = glob(["assets/*"]),
+)
+
+filegroup(
+    name = "proto_files",
+    srcs = glob(["proto/**/*.proto"]),
+)
+
+proto_library(
+    name = "proto",
+    srcs = [":proto_files"],
+    strip_import_prefix = "proto",
+)
+
+cc_proto_library(
+    name = "cc_proto",
+    deps = [":proto"],
+)
+
+cc_library(
+    name = "tensorboard_logger",
+    srcs = [
+        "src/crc.cc",
+        "src/tensorboard_logger.cc",
+    ],
+    hdrs = [
+        "include/crc.h",
+        "include/tensorboard_logger.h",
+    ],
+    includes = ["include"],
+    visibility = ["//visibility:public"],
+    deps = [
+        ":cc_proto",
+    ],
+)
+
+# test_tensorboard_logger expects a demo directory to exist,
+# so we create the directory and a dummy file in it.
+genrule(
+    name = "create_demo_directory",
+    outs = ["demo/KEEP"],
+    cmd = "mkdir -p $(RULEDIR)/demo && touch $(RULEDIR)/demo/KEEP",
+    visibility = ["//visibility:public"],
+)
+
+cc_test(
+    name = "test_tensorboard_logger",
+    srcs = [
+        "tests/test_tensorboard_logger.cc",
+    ],
+    data = [
+        ":assets",
+        ":create_demo_directory",
+    ],
+    deps = [":tensorboard_logger"],
+)
