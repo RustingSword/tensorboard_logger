@@ -154,6 +154,7 @@ int test_log_embedding(TensorBoardLogger& logger) {
 int test_log(const char* log_file) {
     TensorBoardLogger logger(log_file);
 
+    test_add_hparams(logger);
     test_log_scalar(logger);
     test_log_histogram(logger);
     test_log_image(logger);
