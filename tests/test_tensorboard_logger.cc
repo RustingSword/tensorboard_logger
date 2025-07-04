@@ -20,6 +20,26 @@ string read_binary_file(const string& filename) {
     return ss.str();
 }
 
+int test_add_hparams(TensorBoardLogger& logger) {
+    cout << "test add hparams" << endl;
+    std::map<std::string, google::protobuf::Value> hparams;
+    {
+        google::protobuf::Value lr_val;
+        lr_val.set_number_value(0.01);
+        hparams["learning_rate"] = lr_val;
+
+        google::protobuf::Value bs_val;
+        bs_val.set_number_value(32);
+        hparams["batch_size"] = bs_val;
+
+        google::protobuf::Value opt_val;
+        opt_val.set_string_value("adam");
+        hparams["optimizer"] = opt_val;
+    }
+    logger.add_hparams(hparams, "test", 1700000000.0);
+    return 0;
+}
+
 int test_log_scalar(TensorBoardLogger& logger) {
     cout << "test log scalar" << endl;
     default_random_engine generator;
