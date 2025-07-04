@@ -25,6 +25,8 @@ std::string get_basename(const std::string &path);
 const std::string kProjectorConfigFile = "projector_config.pbtxt";
 const std::string kProjectorPluginName = "projector";
 const std::string kTextPluginName = "text";
+const std::string kSessionStartInfoTag = "_hparams_/session_start_info";
+const std::string kHparamsPluginName = "hparams";
 
 struct TensorBoardLoggerOptions {
     // Log is flushed whenever this many entries have been written since the

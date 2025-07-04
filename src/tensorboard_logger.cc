@@ -30,15 +30,13 @@ using tensorflow::Summary;
 using tensorflow::SummaryMetadata;
 using tensorflow::TensorProto;
 
-const string SESSION_START_INFO_TAG = "_hparams_/session_start_info";
-
 Summary *summary_pb(const string &tag, HParamsPluginData *hparams_plugin_data) {
     auto *summary = new Summary();
     auto *content = new HParamsPluginData();
     content->CopyFrom(*hparams_plugin_data);
     content->set_version(0);
     auto *plugin_data = new SummaryMetadata::PluginData();
-    plugin_data->set_plugin_name("hparams");
+    plugin_data->set_plugin_name(kHparamsPluginName);
     plugin_data->set_content(content->SerializeAsString());
     auto *summary_metadata = new SummaryMetadata();
     summary_metadata->set_allocated_plugin_data(plugin_data);
@@ -88,7 +86,7 @@ int TensorBoardLogger::add_session_start_info(
     SessionStartInfo *session_start_info) {
     auto *hparams_plugin_data = new HParamsPluginData();
     hparams_plugin_data->set_allocated_session_start_info(session_start_info);
-    auto *summary = summary_pb(SESSION_START_INFO_TAG, hparams_plugin_data);
+    auto *summary = summary_pb(kSessionStartInfoTag, hparams_plugin_data);
     Event event;
     event.set_allocated_summary(summary);
     return write(event);
