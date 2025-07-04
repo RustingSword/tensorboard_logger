@@ -2,18 +2,17 @@
 
 #include <google/protobuf/text_format.h>
 
-#include <algorithm>
 #include <cstdint>
 #include <ctime>
 #include <fstream>
 #include <iostream>
 #include <limits>
-#include <random>
 #include <sstream>
 #include <string>
 #include <vector>
 
 #include "api.pb.h"
+#include "crc.h"
 #include "event.pb.h"
 #include "projector_config.pb.h"
 
@@ -25,11 +24,8 @@ using std::ofstream;
 using std::ostringstream;
 using std::to_string;
 using std::vector;
-using tensorflow::EmbeddingInfo;
 using tensorflow::Event;
-using tensorflow::HistogramProto;
 using tensorflow::ProjectorConfig;
-// using tensorflow::SpriteMetadata;
 using tensorflow::Summary;
 using tensorflow::SummaryMetadata;
 using tensorflow::TensorProto;

@@ -2,14 +2,12 @@
 #define TENSORBOARD_LOGGER_H
 
 #include <atomic>
-#include <exception>
 #include <fstream>
 #include <mutex>
 #include <string>
 #include <thread>
 #include <vector>
 
-#include "crc.h"
 #include "event.pb.h"
 #include "plugin_data.pb.h"
 using ::google::protobuf::Value;
