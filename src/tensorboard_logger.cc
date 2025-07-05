@@ -2,37 +2,50 @@
 
 #include <google/protobuf/text_format.h>
 
-#include <algorithm>
 #include <cstdint>
 #include <ctime>
 #include <fstream>
 #include <iostream>
 #include <limits>
-#include <random>
 #include <sstream>
 #include <string>
 #include <vector>
 
+#include "api.pb.h"
+#include "crc.h"
 #include "event.pb.h"
 #include "projector_config.pb.h"
 
+using google::protobuf::TextFormat;
 using std::endl;
 using std::ifstream;
 using std::numeric_limits;
 using std::ofstream;
 using std::ostringstream;
-using std::string;
 using std::to_string;
 using std::vector;
-using google::protobuf::TextFormat;
-using tensorflow::EmbeddingInfo;
 using tensorflow::Event;
-using tensorflow::HistogramProto;
 using tensorflow::ProjectorConfig;
-// using tensorflow::SpriteMetadata;
 using tensorflow::Summary;
 using tensorflow::SummaryMetadata;
 using tensorflow::TensorProto;
+
+Summary *summary_pb(const string &tag, HParamsPluginData *hparams_plugin_data) {
+    auto *summary = new Summary();
+    auto *content = new HParamsPluginData();
+    content->CopyFrom(*hparams_plugin_data);
+    content->set_version(0);
+    auto *plugin_data = new SummaryMetadata::PluginData();
+    plugin_data->set_plugin_name(kHparamsPluginName);
+    plugin_data->set_content(content->SerializeAsString());
+    auto *summary_metadata = new SummaryMetadata();
+    summary_metadata->set_allocated_plugin_data(plugin_data);
+    auto value = summary->add_value();
+    value->set_tag(tag);
+    value->set_allocated_metadata(summary_metadata);
+    value->set_allocated_tensor(nullptr);
+    return summary;
+}
 
 // https://github.com/dmlc/tensorboard/blob/master/python/tensorboard/summary.py#L115
 int TensorBoardLogger::generate_default_buckets() {
@@ -55,6 +68,28 @@ int TensorBoardLogger::generate_default_buckets() {
     }
 
     return 0;
+}
+
+int TensorBoardLogger::add_hparams(const map<string, Value> &hparams,
+                                   const string &group_name,
+                                   double start_time_secs) {
+    auto *session_start_info = new SessionStartInfo();
+    session_start_info->set_group_name(group_name);
+    session_start_info->set_start_time_secs(start_time_secs);
+    auto mutable_hparams = session_start_info->mutable_hparams();
+    for (const auto &pair : hparams)
+        (*mutable_hparams)[pair.first].CopyFrom(pair.second);
+    return add_session_start_info(session_start_info);
+}
+
+int TensorBoardLogger::add_session_start_info(
+    SessionStartInfo *session_start_info) {
+    auto *hparams_plugin_data = new HParamsPluginData();
+    hparams_plugin_data->set_allocated_session_start_info(session_start_info);
+    auto *summary = summary_pb(kSessionStartInfoTag, hparams_plugin_data);
+    Event event;
+    event.set_allocated_summary(summary);
+    return write(event);
 }
 
 int TensorBoardLogger::add_scalar(const string &tag, int step, double value) {
@@ -118,13 +153,11 @@ int TensorBoardLogger::add_images(
     return add_event(step, summary);
 }
 
-void TensorBoardLogger::flusher()
-{
+void TensorBoardLogger::flusher() {
     auto period = std::chrono::seconds(options.flush_period_s_);
     auto next_flush_time = std::chrono::high_resolution_clock::now() + period;
 
-    while (!stop)
-    {
+    while (!stop) {
         if (std::chrono::high_resolution_clock::now() < next_flush_time) {
             std::this_thread::sleep_for(std::chrono::seconds(1));
             continue;
@@ -238,7 +271,8 @@ int TensorBoardLogger::add_embedding(
     const std::string &tensordata_filename,
     const std::vector<std::string> &metadata,
     const std::string &metadata_filename, int step) {
-    ofstream binary_tensor_file(log_dir_ + tensordata_filename, std::ios::binary);
+    ofstream binary_tensor_file(log_dir_ + tensordata_filename,
+                                std::ios::binary);
     if (!binary_tensor_file.is_open()) {
         throw std::runtime_error("failed to open binary tensor file " +
                                  log_dir_ + tensordata_filename);
@@ -275,7 +309,8 @@ int TensorBoardLogger::add_embedding(const std::string &tensor_name,
                                      const std::vector<std::string> &metadata,
                                      const std::string &metadata_filename,
                                      int step) {
-    ofstream binary_tensor_file(log_dir_ + tensordata_filename, std::ios::binary);
+    ofstream binary_tensor_file(log_dir_ + tensordata_filename,
+                                std::ios::binary);
     if (!binary_tensor_file.is_open()) {
         throw std::runtime_error("failed to open binary tensor file " +
                                  log_dir_ + tensordata_filename);
@@ -325,7 +360,7 @@ int TensorBoardLogger::write(Event &event) {
     ofs_->write((char *)&len_crc, sizeof(len_crc));  // NOLINT
     ofs_->write(buf.c_str(), buf.size());
     ofs_->write((char *)&data_crc, sizeof(data_crc));  // NOLINT
-    
+
     if (queue_size++ > options.max_queue_size_) {
         ofs_->flush();
         queue_size = 0;

@@ -11,6 +11,8 @@ find_package(Protobuf REQUIRED)
 
 file(GLOB protos "proto/*.proto")
 
+set(PROTOBUF_IMPORT_DIRS ${Protobuf_INCLUDE_DIRS})
+
 protobuf_generate_cpp(PROTO_SRCS PROTO_HDRS ${protos})
 
 add_library(tensorboard_logger

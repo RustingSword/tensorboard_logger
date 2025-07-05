@@ -1,17 +1,20 @@
 #ifndef TENSORBOARD_LOGGER_H
 #define TENSORBOARD_LOGGER_H
 
-#include <exception>
-#include <fstream>
-#include <string>
-#include <vector>
 #include <atomic>
-#include <thread>
+#include <fstream>
 #include <mutex>
+#include <string>
+#include <thread>
+#include <vector>
 
-#include "crc.h"
 #include "event.pb.h"
-
+#include "plugin_data.pb.h"
+using ::google::protobuf::Value;
+using std::map;
+using std::string;
+using tensorboard::hparams::HParamsPluginData;
+using tensorboard::hparams::SessionStartInfo;
 using tensorflow::Event;
 using tensorflow::Summary;
 
@@ -22,12 +25,12 @@ std::string get_basename(const std::string &path);
 const std::string kProjectorConfigFile = "projector_config.pbtxt";
 const std::string kProjectorPluginName = "projector";
 const std::string kTextPluginName = "text";
+const std::string kSessionStartInfoTag = "_hparams_/session_start_info";
+const std::string kHparamsPluginName = "hparams";
 
-
-struct TensorBoardLoggerOptions
-{
-    // Log is flushed whenever this many entries have been written since the last
-    // forced flush.
+struct TensorBoardLoggerOptions {
+    // Log is flushed whenever this many entries have been written since the
+    // last forced flush.
     size_t max_queue_size_ = 100000;
     TensorBoardLoggerOptions &max_queue_size(size_t max_queue_size) {
         max_queue_size_ = max_queue_size;
@@ -50,15 +53,15 @@ struct TensorBoardLoggerOptions
 
 class TensorBoardLogger {
    public:
-    
     explicit TensorBoardLogger(const std::string &log_file,
-                               const TensorBoardLoggerOptions &options={}) {
+                               const TensorBoardLoggerOptions &options = {}) {
         this->options = options;
         auto basename = get_basename(log_file);
         if (basename.find("tfevents") == std::string::npos) {
             throw std::runtime_error(
                 "A valid event file must contain substring \"tfevents\" in its "
-                "basename, got " + basename);
+                "basename, got " +
+                basename);
         }
         bucket_limits_ = nullptr;
         ofs_ = new std::ofstream(
@@ -85,6 +88,9 @@ class TensorBoardLogger {
             flushing_thread.join();
         }
     }
+
+    int add_hparams(const map<string, Value> &hparams, const string &group_name,
+                    double start_time_secs);
     int add_scalar(const std::string &tag, int step, double value);
     int add_scalar(const std::string &tag, int step, float value);
 
@@ -189,6 +195,7 @@ class TensorBoardLogger {
 
    private:
     int generate_default_buckets();
+    int add_session_start_info(SessionStartInfo *session_start_info);
     int add_event(int64_t step, Summary *summary);
     int write(Event &event);
     void flusher();
@@ -197,7 +204,7 @@ class TensorBoardLogger {
     std::ofstream *ofs_;
     std::vector<double> *bucket_limits_;
     TensorBoardLoggerOptions options;
-    
+
     std::atomic<bool> stop{false};
     size_t queue_size{0};
     std::thread flushing_thread;

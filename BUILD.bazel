@@ -14,6 +14,9 @@ proto_library(
     name = "proto",
     srcs = [":proto_files"],
     strip_import_prefix = "proto",
+    deps = [
+        "@protobuf//:struct_proto",
+    ],
 )
 
 cc_proto_library(

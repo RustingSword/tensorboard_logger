@@ -1,0 +1,17 @@
+diff --git refresh.template.py refresh.template.py
+index 3b33701..acc5f90 100644
+--- refresh.template.py
++++ refresh.template.py
+@@ -615,6 +615,11 @@ def _get_files(compile_action):
+ 
+     # Getting the source file is a little trickier than it might seem.
+ 
++    is_precompiled_header = any([arg == "-xc++-header" for arg in compile_action.arguments])
++    if is_precompiled_header:
++        header_files = [arg for arg in compile_action.arguments if not arg.startswith('-') and arg.endswith(".h")]
++        return set(), set(header_files)
++
+     # First, we do the obvious thing: Filter args to those that look like source files.
+     source_file_candidates = [arg for arg in compile_action.arguments if not arg.startswith('-') and arg.endswith(_get_files.source_extensions)]
+     assert source_file_candidates, f"No source files found in compile args: {compile_action.arguments}.\nPlease file an issue with this information!"
+     

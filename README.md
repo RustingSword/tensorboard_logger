@@ -6,6 +6,8 @@ Only support `scalar`, `histogram`, `image`, `audio` `text` and `projector` at t
 
 ## Using the library
 
+### CMake
+
 Protobuf is the only dependency and assumed to be available via cmake's `find_package`.
 
 To build and install TensorBoard Logger with cmake:
@@ -48,6 +50,31 @@ To run the test:
 > tensorboard --logdir demo  # try adding --load_fast=false if you don't see projector tab
 ```
 
+### Bazel
+
+To use TensorBoard Logger with Bazel, add the following to your `MODULE.bazel` file:
+
+```
+bazel_dep(name = "tensorboard_logger")
+git_override(
+    module_name = "tensorboard_logger",
+    branch = "master",
+    remote = "https://github.com/RustingSword/tensorboard_logger.git",
+)
+```
+
+And then to use the added dependency in your `BUILD.bazel` file, you can do:
+```
+cc_binary(
+    name = "...",
+    srcs = [...],
+    deps = [
+        "@tensorboard_logger",
+        ...
+    ],
+)
+```
+
 ## Screenshots
 
 ![scalar](./assets/scalar.png)
@@ -56,6 +83,7 @@ To run the test:
 ![audio](./assets/audio.png)
 ![text](./assets/text.png)
 ![embedding](./assets/embedding.png)
+![hparams](./assets/hparams.png)
 
 ## Acknowledgement
 
